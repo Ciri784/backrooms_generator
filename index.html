@@ -146,34 +146,41 @@
             background: rgba(201, 180, 88, 0.3);
         }
 
-        .output {
-            margin-top: 20px;
-            padding: 20px;
+        #room-output, #entity-output {
+            margin-top: 15px;
+            padding: 15px;
             background: rgba(0, 0, 0, 0.3);
             border-left: 2px solid #c9b458;
-            min-height: 200px;
+            min-height: 180px;
             font-size: 0.9rem;
             line-height: 1.8;
             white-space: pre-wrap;
-        }
-
-        .output.level-header {
-            color: #e8d78a;
-            font-size: 1.2rem;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        .output.entity-name {
-            color: #d45050;
-            font-size: 1.3rem;
-            text-align: center;
-            margin-bottom: 15px;
+            overflow-x: auto;
         }
 
         .loading {
             color: #6a6a4a;
             font-style: italic;
+        }
+
+        .output {
+            white-space: pre-wrap;
+        }
+
+        .level-header {
+            display: block;
+            color: #e8d78a;
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .entity-name {
+            display: block;
+            color: #d45050;
+            font-size: 1.3rem;
+            text-align: center;
+            margin-bottom: 12px;
         }
 
         .static-text {
@@ -486,28 +493,26 @@
         function generateRoom() {
             const output = document.getElementById('room-output');
             output.innerHTML = '<span class="loading">Generating</span>';
-            output.className = 'output';
 
             setTimeout(() => {
                 const data = generateRoomData();
                 output.innerHTML =
-                    `<span class="level-header">LEVEL ${data.level_num} — ${data.level_name}</span>\n` +
-                    `(${data.level_subtitle})\n\n` +
-                    `${data.description}`;
+                    `<span class="level-header">LEVEL ${data.level_num} — ${data.level_name}</span>` +
+                    `<br>(${data.level_subtitle})<br><br>` +
+                    `${data.description.replace(/\n/g, '<br>')}`;
             }, 300);
         }
 
         function generateEntity() {
             const output = document.getElementById('entity-output');
             output.innerHTML = '<span class="loading">Entity approaching</span>';
-            output.className = 'output';
 
             setTimeout(() => {
                 const data = generateEntityData();
                 output.innerHTML =
-                    `<span class="entity-name">${data.name}</span>\n\n` +
-                    `${data.description}\n\n` +
-                    `[ ${data.behavior} ]\n\n` +
+                    `<span class="entity-name">${data.name}</span><br><br>` +
+                    `${data.description.replace(/\n/g, '<br>')}<br><br>` +
+                    `[ ${data.behavior} ]<br><br>` +
                     `⚠ ${data.warning}`;
             }, 300);
         }
