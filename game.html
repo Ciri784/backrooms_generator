@@ -18,19 +18,17 @@
             padding: 20px;
         }
 
-        /* Scanlines + Vignette combined */
         body::before {
             content: "";
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: 
-                radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%),
-                repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
+                radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.5) 100%),
+                repeating-linear-gradient(0deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2) 1px, transparent 1px, transparent 2px);
             pointer-events: none;
             z-index: 1000;
         }
 
-        /* Yellow tint overlay */
         body::after {
             content: "";
             position: fixed;
@@ -40,7 +38,6 @@
             z-index: 999;
         }
 
-        /* CRT flicker effect */
         @keyframes flicker {
             0% { opacity: 0.97; }
             5% { opacity: 0.95; }
@@ -65,11 +62,8 @@
             100% { opacity: 0.97; }
         }
 
-        body {
-            animation: flicker 0.15s infinite;
-        }
+        body { animation: flicker 0.15s infinite; }
 
-        /* Extra noise layer */
         #noise {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -80,7 +74,7 @@
         }
 
         #game {
-            max-width: 700px;
+            max-width: 750px;
             width: 100%;
             background: rgba(20, 20, 10, 0.95);
             border: 1px solid #3a3520;
@@ -111,33 +105,44 @@
             color: #6a5a30;
             font-size: 0.75rem;
             letter-spacing: 3px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
+
+        #back-link {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        #back-link a {
+            color: #5a5a30;
+            text-decoration: none;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+        }
+
+        #back-link a:hover { color: #c9b458; }
 
         #stats {
             display: flex;
             justify-content: space-between;
-            gap: 15px;
-            margin-bottom: 20px;
-            padding: 15px;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 12px;
             background: rgba(0,0,0,0.3);
             border: 1px solid #2a2515;
         }
 
-        .stat {
-            text-align: center;
-            flex: 1;
-        }
+        .stat { text-align: center; flex: 1; }
 
         .stat-label {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: #6a5a30;
             letter-spacing: 2px;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
 
         .stat-value {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: #c9b458;
         }
 
@@ -146,33 +151,38 @@
 
         #level-info {
             text-align: center;
-            padding: 15px;
+            padding: 12px;
             background: rgba(201, 180, 88, 0.05);
             border: 1px solid #3a3520;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         #level-name {
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: #e8d78a;
             letter-spacing: 3px;
         }
 
         #room-desc {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #8a7a3a;
-            margin-top: 8px;
-            line-height: 1.6;
+            margin-top: 6px;
+        }
+
+        #main-area {
+            display: grid;
+            grid-template-columns: 1fr 180px;
+            gap: 15px;
+            margin-bottom: 15px;
         }
 
         #narrative {
-            min-height: 120px;
-            padding: 20px;
+            min-height: 130px;
+            padding: 15px;
             background: rgba(0,0,0,0.4);
             border-left: 2px solid #c9b458;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            line-height: 1.8;
+            font-size: 0.85rem;
+            line-height: 1.7;
             white-space: pre-wrap;
         }
 
@@ -180,19 +190,95 @@
         #narrative.item { border-left-color: #50d450; }
         #narrative.entity { border-left-color: #d45050; }
 
-        #actions {
+        #inventory-panel {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #2a2515;
+            padding: 12px;
+        }
+
+        #inventory-panel h3 {
+            font-size: 0.7rem;
+            color: #6a5a30;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-align: center;
+            border-bottom: 1px solid #2a2515;
+            padding-bottom: 6px;
+        }
+
+        #inventory-slots {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 6px;
+        }
+
+        .inv-slot {
+            aspect-ratio: 1;
+            background: rgba(30,30,20,0.8);
+            border: 1px solid #3a3520;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 4px;
+        }
+
+        .inv-slot:hover {
+            border-color: #c9b458;
+            background: rgba(201,180,88,0.1);
+        }
+
+        .inv-slot.empty {
+            opacity: 0.3;
+            cursor: default;
+        }
+
+        .inv-slot.empty:hover {
+            border-color: #3a3520;
+            background: rgba(30,30,20,0.8);
+        }
+
+        .inv-slot .item-name {
+            font-size: 0.6rem;
+            color: #50d450;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .inv-slot .item-desc {
+            font-size: 0.5rem;
+            color: #4a5a30;
+            text-align: center;
+            margin-top: 3px;
+        }
+
+        .inv-slot.flashlight .item-name { color: #d4d450; }
+        .inv-slot.painkiller .item-name { color: #d45050; }
+        .inv-slot.almond .item-name { color: #50d4d4; }
+
+        #inventory-note {
+            font-size: 0.55rem;
+            color: #4a4a2a;
+            text-align: center;
+            margin-top: 8px;
+            letter-spacing: 1px;
+        }
+
+        #actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 8px;
         }
 
         .action-btn {
             background: transparent;
             border: 1px solid #3a3520;
             color: #8a7a3a;
-            padding: 12px;
+            padding: 10px 6px;
             font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             cursor: pointer;
             letter-spacing: 1px;
             transition: all 0.2s;
@@ -204,20 +290,8 @@
             background: rgba(201, 180, 88, 0.1);
         }
 
-        .action-btn:active {
-            background: rgba(201, 180, 88, 0.2);
-        }
-
-        .action-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-
-        .action-btn.primary {
-            border-color: #c9b458;
-            color: #c9b458;
-            grid-column: 1 / -1;
-        }
+        .action-btn:active { background: rgba(201, 180, 88, 0.2); }
+        .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
         #game-over {
             display: none;
@@ -256,23 +330,12 @@
             letter-spacing: 3px;
         }
 
-        #restart-btn:hover {
-            background: rgba(212, 80, 80, 0.1);
-        }
+        #restart-btn:hover { background: rgba(212, 80, 80, 0.1); }
 
-        .inventory {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 8px;
-        }
-
-        .inv-item {
-            font-size: 0.7rem;
-            padding: 3px 8px;
-            background: rgba(80, 212, 80, 0.1);
-            border: 1px solid #50d450;
-            color: #50d450;
+        @media (max-width: 600px) {
+            #main-area { grid-template-columns: 1fr; }
+            #inventory-slots { grid-template-columns: repeat(4, 1fr); }
+            #actions { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
@@ -281,10 +344,7 @@
     <div id="game">
         <h1>THE BACKROOMS</h1>
         <p class="subtitle">SURVIVAL MODE</p>
-
-        <div style="text-align: center; margin-bottom: 20px;">
-            <a href="index.html" style="color: #5a5a30; text-decoration: none; font-size: 0.7rem; letter-spacing: 2px;">[ BACK TO MAIN ]</a>
-        </div>
+        <div id="back-link"><a href="index.html">[ BACK TO MAIN ]</a></div>
 
         <div id="stats">
             <div class="stat">
@@ -300,23 +360,36 @@
                 <div class="stat-value" id="rooms">0</div>
             </div>
             <div class="stat">
-                <div class="stat-label">ITEMS</div>
-                <div class="stat-value" id="item-count">0</div>
+                <div class="stat-label">ESCAPED</div>
+                <div class="stat-value" id="escaped">0</div>
             </div>
         </div>
 
         <div id="level-info">
             <div id="level-name">LEVEL 0 — THE LOBBY</div>
-            <div id="room-desc">Loading...</div>
+            <div id="room-desc">Office maze. Yellow walls. The hum.</div>
         </div>
 
-        <div id="narrative">You wake up somewhere you shouldn't be. Yellow light flickers above. The air smells wrong. You need to find a way out.</div>
+        <div id="main-area">
+            <div id="narrative">You wake up somewhere you shouldn't be. Yellow light flickers above. The air smells wrong. You need to find a way out.</div>
+
+            <div id="inventory-panel">
+                <h3>INVENTORY</h3>
+                <div id="inventory-slots">
+                    <div class="inv-slot empty" data-slot="0"></div>
+                    <div class="inv-slot empty" data-slot="1"></div>
+                    <div class="inv-slot empty" data-slot="2"></div>
+                    <div class="inv-slot empty" data-slot="3"></div>
+                </div>
+                <div id="inventory-note">4 SLOTS · CLICK TO USE</div>
+            </div>
+        </div>
 
         <div id="actions">
-            <button class="action-btn" onclick="moveOn()">MOVE FORWARD</button>
+            <button class="action-btn" onclick="moveOn()">MOVE</button>
             <button class="action-btn" onclick="search()">SEARCH</button>
             <button class="action-btn" onclick="hide()">HIDE</button>
-            <button class="action-btn" onclick="useItem()">USE ITEM</button>
+            <button class="action-btn" onclick="hide()">WAIT</button>
         </div>
     </div>
 
@@ -327,19 +400,17 @@
     </div>
 
     <script>
-        // ============================================================
-        // GAME DATA
-        // ============================================================
+        const MAX_INVENTORY = 4;
 
         const LEVELS = [
-            { num: 0, name: "THE LOBBY", desc: "Office maze. Yellow walls. The hum.", entities: ["Wretches", "Faceless"], difficulty: 1 },
-            { num: 1, name: "THE PACKING ROOMS", desc: "Wooden crates everywhere. Some are open.", entities: ["Wretches", "Smiler"], difficulty: 1 },
-            { num: 2, name: "PIPE HEAVEN", desc: "An endless network of pipes. It hums.", entities: ["Deathmoth", "Cursor"], difficulty: 2 },
-            { num: 3, name: "THE OFFICES", desc: "Filing cabinets. Papers everywhere.", entities: ["Faceless", "Skinless"], difficulty: 2 },
-            { num: 4, name: "ABANDONED CONCRETE", desc: "Structural supports that make no sense.", entities: ["Smiler", "Partygoers"], difficulty: 3 },
-            { num: 5, name: "HOTELS & ROOMS", desc: "A hotel that goes on forever.", entities: ["Partygoers", "The Thing That Tastes Color"], difficulty: 3 },
-            { num: 6, name: "THE WATER ZONE", desc: "Pools of liquid in dark rooms.", entities: ["The Thing That Tastes Color", "Cursor"], difficulty: 4 },
-            { num: 7, name: "THE GOLF COURSE", desc: "An endless course. The flag is always the same distance away.", entities: ["Cursor", "Skinless"], difficulty: 5 },
+            { num: 0, name: "THE LOBBY", desc: "Office maze. Yellow walls. The hum.", entities: ["Wretches", "Faceless"] },
+            { num: 1, name: "THE PACKING ROOMS", desc: "Wooden crates everywhere. Some are open.", entities: ["Wretches", "Smiler"] },
+            { num: 2, name: "PIPE HEAVEN", desc: "An endless network of pipes. It hums.", entities: ["Deathmoth", "Cursor"] },
+            { num: 3, name: "THE OFFICES", desc: "Filing cabinets. Papers everywhere.", entities: ["Faceless", "Skinless"] },
+            { num: 4, name: "ABANDONED CONCRETE", desc: "Structural supports that make no sense.", entities: ["Smiler", "Partygoers"] },
+            { num: 5, name: "HOTELS & ROOMS", desc: "A hotel that goes on forever.", entities: ["Partygoers", "The Thing That Tastes Color"] },
+            { num: 6, name: "THE WATER ZONE", desc: "Pools of liquid in dark rooms.", entities: ["The Thing That Tastes Color", "Cursor"] },
+            { num: 7, name: "THE GOLF COURSE", desc: "An endless course. The flag is always the same distance away.", entities: ["Cursor", "Skinless"] },
         ];
 
         const ENTITY_TEMPLATES = {
@@ -354,103 +425,76 @@
         };
 
         const ITEMS = [
-            { name: "Flashlight", desc: "Fends off Wretches", effect: "escape_bonus", value: 0.2 },
-            { name: "Painkillers", desc: "Reduces damage taken", effect: "damage_reduction", value: 10 },
-            { name: " Almond Water", desc: "Who knows what it does", effect: "stability_restore", value: 15 },
-            { name: "Gauss Meter", desc: "Detects entities nearby", effect: "detect", value: 1 },
-            { name: "Bandages", desc: "Basic healing", effect: "stability_restore", value: 20 },
+            { id: "flashlight", name: "Flashlight", desc: "Fends Wretches", effect: "escape_bonus", value: 0.25, cssClass: "flashlight" },
+            { id: "painkiller", name: "Painkiller", desc: "-10 DMG", effect: "damage_reduction", value: 10, cssClass: "painkiller" },
+            { id: "almond", name: "Almond Water", desc: "??", effect: "stability_restore", value: 20, cssClass: "almond" },
+            { id: "bandage", name: "Bandage", desc: "+20 HP", effect: "stability_restore", value: 20, cssClass: "" },
+            { id: "gauss", name: "Gauss Meter", desc: "Detect", effect: "detect", value: 1, cssClass: "" },
         ];
 
         const SAFE_ACTIONS = {
-            "Wretches": "RUN",
-            "Faceless": "HIDE",
-            "Smiler": "CLOSE EYES",
-            "Deathmoth": "STAY STILL",
-            "Partygoers": "DON'T DISTURB",
-            "The Thing That Tastes Color": "HOLD BREATH",
-            "Cursor": "RUN",
-            "Skinless": "RUN",
+            "Wretches": "RUN", "Faceless": "HIDE", "Smiler": "CLOSE EYES",
+            "Deathmoth": "STAY STILL", "Partygoers": "DON'T DISTURB",
+            "The Thing That Tastes Color": "HOLD BREATH", "Cursor": "RUN", "Skinless": "RUN",
         };
-
-        // ============================================================
-        // GAME STATE
-        // ============================================================
 
         let state = {};
 
         function initState() {
             state = {
-                stability: 100,
-                level: 0,
-                rooms: 0,
-                inventory: [],
-                hasFlashlight: false,
-                currentEntity: null,
-                entityLevel: 0,
-                narrativeClass: "",
+                stability: 100, level: 0, rooms: 0, escaped: 0,
+                inventory: [], hasFlashlight: false, damageReduction: 0,
+                currentEntity: null, inEncounter: false,
             };
         }
 
-        // ============================================================
-        // UTILITIES
-        // ============================================================
+        function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function chance(prob) { return Math.random() < prob; }
+        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-        function pick(arr) {
-            return arr[Math.floor(Math.random() * arr.length)];
-        }
-
-        function chance(prob) {
-            return Math.random() < prob;
-        }
-
-        function clamp(v, min, max) {
-            return Math.max(min, Math.min(max, v));
-        }
-
-        // ============================================================
-        // GAME LOGIC
-        // ============================================================
-
-        function getCurrentLevel() {
-            return LEVELS[state.level];
-        }
+        function getCurrentLevel() { return LEVELS[state.level]; }
 
         function generateRoomDesc() {
-            const templates = [
-                "You are in {size} {type}. {detail}",
-                "A {type} stretches before you. {detail}",
-                "You find yourself in a {type}. {detail}",
-            ];
             const sizes = ["small", "cramped", "vast", "narrow", "seemingly infinite"];
             const types = ["room", "hallway", "corridor", "space", "chamber"];
             const details = [
-                "The fluorescent lights buzz overhead.",
-                "Yellow wallpaper peels from the walls.",
-                "The air is thick and stale.",
-                "Something drips in the distance.",
-                "You hear something moving.",
-                "The walls feel wrong. Too close.",
-                "Muffled sounds echo from somewhere.",
-                "The floor is wet. You're not sure with what.",
+                "The fluorescent lights buzz overhead.", "Yellow wallpaper peels from the walls.",
+                "The air is thick and stale.", "Something drips in the distance.",
+                "You hear something moving.", "The walls feel wrong. Too close.",
+                "Muffled sounds echo from somewhere.", "The floor is wet.",
             ];
-            return pick(templates)
-                .replace("{size}", pick(sizes))
-                .replace("{type}", pick(types))
-                .replace("{detail}", pick(details));
+            return `You are in a ${pick(sizes)} ${pick(types)}. ${pick(details)}`;
         }
 
         function updateUI() {
             const stab = document.getElementById("stability");
             stab.textContent = state.stability + "%";
             stab.className = "stat-value" + (state.stability <= 25 ? " danger" : state.stability <= 50 ? " warning" : "");
-
             document.getElementById("level").textContent = state.level;
             document.getElementById("rooms").textContent = state.rooms;
-            document.getElementById("item-count").textContent = state.inventory.length;
+            document.getElementById("escaped").textContent = state.escaped;
 
             const lv = getCurrentLevel();
             document.getElementById("level-name").textContent = `LEVEL ${lv.num} — ${lv.name}`;
             document.getElementById("room-desc").textContent = lv.desc;
+
+            renderInventory();
+        }
+
+        function renderInventory() {
+            const slots = document.querySelectorAll('.inv-slot');
+            slots.forEach((slot, i) => {
+                const item = state.inventory[i];
+                if (item) {
+                    slot.className = `inv-slot ${item.cssClass || ''}`;
+                    slot.innerHTML = `<span class="item-name">${item.name}</span><span class="item-desc">${item.desc}</span>`;
+                    slot.onclick = () => useItem(i);
+                } else {
+                    slot.className = 'inv-slot empty';
+                    slot.innerHTML = '';
+                    slot.onclick = null;
+                }
+            });
         }
 
         function narrative(text, cls = "") {
@@ -474,180 +518,188 @@
             return false;
         }
 
-        // ============================================================
-        // ACTIONS
-        // ============================================================
+        function addItem() {
+            if (state.inventory.length >= MAX_INVENTORY) return false;
+            const item = pick(ITEMS);
+            state.inventory.push(item);
+            return item;
+        }
+
+        function useItem(slotIndex) {
+            if (state.inEncounter) return;
+            const item = state.inventory[slotIndex];
+            if (!item) return;
+
+            state.inventory.splice(slotIndex, 1);
+
+            switch (item.effect) {
+                case "stability_restore":
+                    state.stability = clamp(state.stability + item.value, 0, 100);
+                    narrative(`You use ${item.name}. ${item.desc === "???" ? "" : item.desc}\n\n+${item.value}% Stability`, "item");
+                    break;
+                case "damage_reduction":
+                    state.damageReduction = item.value;
+                    narrative(`You use ${item.name}.\n\nDamage reduced by ${item.value} for next encounter.`, "item");
+                    break;
+                case "escape_bonus":
+                    state.hasFlashlight = true;
+                    narrative(`You equip ${item.name}.\n\nWretches will fear you. Escape chance +25%.`, "item");
+                    break;
+                case "detect":
+                    narrative(`You turn on the ${item.name}.\n\nThe needle twitches. Something is nearby.`, "item");
+                    break;
+            }
+
+            updateUI();
+        }
 
         function moveOn() {
+            if (state.inEncounter) return;
             state.rooms++;
 
-            // Random level transition (10% chance to go deeper)
-            if (chance(0.1) && state.level < 7) {
+            if (chance(0.12) && state.level < 7) {
                 state.level++;
-                narrative(`You find a stairway leading ${state.level > 5 ? "up" : "down"}. You descend into Level ${state.level}.\n\nThe atmosphere changes. ${getCurrentLevel().desc}`, "");
+                narrative(`You find a stairway leading ${state.level > 4 ? "up" : "down"}. You descend into Level ${state.level}.\n\n${getCurrentLevel().desc}`, "");
             } else {
                 narrative(`You move forward through the ${getCurrentLevel().name}.\n\n${generateRoomDesc()}`);
             }
 
             updateUI();
 
-            // Entity encounter (15% base chance, scales with level)
-            const encounterChance = 0.15 + (state.level * 0.05);
-            if (chance(encounterChance)) {
-                setTimeout(spawnEntity, 500);
+            if (chance(0.15 + state.level * 0.05)) {
+                setTimeout(spawnEntity, 400);
             }
         }
 
         function search() {
+            if (state.inEncounter) return;
             state.rooms++;
-            updateUI();
 
-            if (chance(0.4)) {
-                const item = pick(ITEMS);
-                state.inventory.push(item);
-                narrative(`You search the area and find: ${item.name}\n${item.desc}`, "item");
-            } else if (chance(0.3)) {
-                narrative("You search but find nothing useful. Just dust and the smell of wet carpet.", "");
+            const found = addItem();
+            if (found) {
+                narrative(`You search the area.\n\nYou find: ${found.name}\n${found.desc}`, "item");
+            } else if (state.inventory.length >= MAX_INVENTORY) {
+                narrative(`You search but your inventory is full.\n\nMaybe you should use some items first.`, "");
             } else {
-                narrative("You hear something while searching. You freeze. Then it passes.", "");
+                narrative(`You search but find nothing useful.\n\nJust dust and the smell of wet carpet.`, "");
             }
 
-            // Risk of entity during search
+            updateUI();
+
             if (chance(0.2 + state.level * 0.03)) {
-                setTimeout(spawnEntity, 800);
+                setTimeout(spawnEntity, 600);
             }
         }
 
         function hide() {
-            if (state.currentEntity) {
-                // Already in entity encounter
+            if (state.inEncounter) {
                 entityEncounter("HIDE");
                 return;
             }
-
             state.rooms++;
             updateUI();
 
-            if (chance(0.6)) {
-                narrative("You find a hiding spot and stay still. The sounds fade. You're alone. For now.", "");
+            if (chance(0.5)) {
+                narrative(`You find a hiding spot and stay still.\n\nThe sounds fade. You're alone. For now.`, "");
             } else {
-                narrative("You hide but hear something getting closer. It knows you're here.", "");
-                if (chance(0.4)) {
-                    setTimeout(spawnEntity, 600);
+                narrative(`You hide but hear something getting closer.\n\nIt knows you're here.`, "");
+                if (chance(0.5)) {
+                    setTimeout(spawnEntity, 500);
                 }
             }
         }
 
-        function useItem() {
-            if (state.inventory.length === 0) {
-                narrative("You have no items.", "");
-                return;
-            }
-
-            const item = state.inventory.shift();
-            switch (item.effect) {
-                case "stability_restore":
-                    state.stability = clamp(state.stability + item.value, 0, 100);
-                    narrative(`You use ${item.name}. ${item.desc}\n\n+${item.value}% Stability`, "item");
-                    break;
-                case "damage_reduction":
-                    state.stability = clamp(state.stability + item.value, 0, 100);
-                    narrative(`You use ${item.name}. ${item.desc}\n\nDamage reduced for next encounter`, "item");
-                    break;
-                case "escape_bonus":
-                    state.hasFlashlight = true;
-                    narrative(`You equip ${item.name}. ${item.desc}\n\nWretches will fear you.`, "item");
-                    break;
-                default:
-                    narrative(`You use ${item.name}. Nothing happens.`, "");
-            }
-
+        function wait() {
+            if (state.inEncounter) return;
+            state.rooms++;
             updateUI();
+
+            if (chance(0.3)) {
+                const item = addItem();
+                if (item) {
+                    narrative(`You wait.\n\nSomething falls from a shelf: ${item.name}\n${item.desc}`, "item");
+                } else {
+                    narrative(`You wait.\n\nNothing happens. Time passes.`, "");
+                }
+            } else {
+                narrative(`You wait.\n\nThe hum continues. The light flickers. Nothing changes.`, "");
+            }
         }
 
-        // ============================================================
-        // ENTITY ENCOUNTERS
-        // ============================================================
-
         function spawnEntity() {
-            const level = getCurrentLevel();
-            const entityName = pick(level.entities);
+            if (state.inEncounter) return;
+            state.inEncounter = true;
+
+            const lv = getCurrentLevel();
+            const entityName = pick(lv.entities);
             const entity = ENTITY_TEMPLATES[entityName];
 
             state.currentEntity = entityName;
-            state.entityLevel = level.num;
 
-            narrative(`WARNING: ${entityName.toUpperCase()}\n\n${entity.desc}\n\nRecommended action: ${entity.action}`, "entity");
+            narrative(`WARNING: ${entityName.toUpperCase()}\n\n${entity.desc}\n\nRecommended: ${entity.action}`, "entity");
 
-            // Change action buttons during encounter
-            const actions = document.getElementById("actions");
-            actions.innerHTML = `
+            document.getElementById("actions").innerHTML = `
                 <button class="action-btn" onclick="entityEncounter('RUN')">RUN</button>
                 <button class="action-btn" onclick="entityEncounter('HIDE')">HIDE</button>
-                <button class="action-btn" onclick="entityEncounter('STAY STILL')">STAY STILL</button>
+                <button class="action-btn" onclick="entityEncounter('STAY STILL')">STILL</button>
                 <button class="action-btn" onclick="entityEncounter('${entity.action}')">${entity.action}</button>
             `;
         }
 
         function entityEncounter(action) {
+            if (!state.inEncounter) return;
+
             const entityName = state.currentEntity;
             const entity = ENTITY_TEMPLATES[entityName];
-
             let escapeChance = entity.escapeChance;
 
-            // Modifiers
-            if (action === SAFE_ACTIONS[entityName]) {
-                escapeChance += 0.25;
-            }
-            if (state.hasFlashlight && entityName === "Wretches") {
-                escapeChance += 0.3;
-            }
+            if (action === SAFE_ACTIONS[entityName]) escapeChance += 0.25;
+            if (state.hasFlashlight && entityName === "Wretches") escapeChance += 0.3;
 
-            // Almond Water bonus
-            const hasAlmondWater = state.inventory.some(i => i.name === "Almond Water");
-            if (hasAlmondWater && entityName === "The Thing That Tastes Color") {
-                escapeChance += 0.2;
-            }
+            const hasAlmond = state.inventory.some(i => i.id === "almond");
+            if (hasAlmond && entityName === "The Thing That Tastes Color") escapeChance += 0.2;
 
             if (chance(escapeChance)) {
-                narrative(`You ${action}.\n\nIt works. The ${entityName} loses interest and fades into the shadows.\n\nYou're safe. For now.`, "");
+                state.escaped++;
+                narrative(`You ${action}.\n\nIt works. The ${entityName} loses interest and fades into the shadows.\n\nYou escaped.`, "");
+                state.hasFlashlight = false;
+                state.damageReduction = 0;
             } else {
-                const damage = entity.damage - (state.inventory.some(i => i.effect === "damage_reduction") ? 10 : 0);
+                let damage = entity.damage;
+                if (state.damageReduction > 0) damage = Math.max(5, damage - state.damageReduction);
                 state.stability = clamp(state.stability - damage, 0, 100);
-                narrative(`You ${action}.\n\nThe ${entityName} catches you. Pain. ${damage}% Stability lost.`, "entity");
+                narrative(`You ${action}.\n\nThe ${entityName} catches you. Pain.\n\n-${damage}% Stability`, "entity");
+                state.hasFlashlight = false;
+                state.damageReduction = 0;
             }
 
             state.currentEntity = null;
+            state.inEncounter = false;
 
-            // Reset action buttons
-            resetActions();
-            updateUI();
-
-            checkGameOver();
-        }
-
-        function resetActions() {
             document.getElementById("actions").innerHTML = `
-                <button class="action-btn" onclick="moveOn()">MOVE FORWARD</button>
+                <button class="action-btn" onclick="moveOn()">MOVE</button>
                 <button class="action-btn" onclick="search()">SEARCH</button>
                 <button class="action-btn" onclick="hide()">HIDE</button>
-                <button class="action-btn" onclick="useItem()">USE ITEM</button>
+                <button class="action-btn" onclick="wait()">WAIT</button>
             `;
-        }
 
-        // ============================================================
-        // START GAME
-        // ============================================================
+            updateUI();
+            checkGameOver();
+        }
 
         function startGame() {
             initState();
             document.getElementById("game-over").classList.remove("show");
-            resetActions();
+            document.getElementById("actions").innerHTML = `
+                <button class="action-btn" onclick="moveOn()">MOVE</button>
+                <button class="action-btn" onclick="search()">SEARCH</button>
+                <button class="action-btn" onclick="hide()">HIDE</button>
+                <button class="action-btn" onclick="wait()">WAIT</button>
+            `;
             updateUI();
             narrative("You wake up somewhere you shouldn't be. Yellow light flickers above. The air smells wrong. You need to find a way out.\n\nExplore carefully. Find items. Avoid entities. Survive.");
         }
 
-        // Initialize
         startGame();
     </script>
 </body>
