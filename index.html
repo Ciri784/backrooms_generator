@@ -412,7 +412,7 @@
         // GENERATION FUNCTIONS
         // ============================================================
 
-        function generateRoom() {
+        function generateRoomData() {
             const room = pick(ROOMS);
             const room_size = pick(ROOM_SIZES);
             const level = pick(LEVEL_NAMES);
@@ -453,7 +453,7 @@
             };
         }
 
-        function generateEntity() {
+        function generateEntityData() {
             const entity = pick(ENTITY_TYPES);
             const behavior = pick(ENTITY_BEHAVIORS);
             const warning = pick(ENTITY_WARNINGS);
@@ -476,7 +476,7 @@
             output.className = 'output';
 
             setTimeout(() => {
-                const data = generateRoom();
+                const data = generateRoomData();
                 output.innerHTML =
                     `<span class="level-header">LEVEL ${data.level_num} — ${data.level_name}</span>\n` +
                     `(${data.level_subtitle})\n\n` +
@@ -490,7 +490,7 @@
             output.className = 'output';
 
             setTimeout(() => {
-                const data = generateEntity();
+                const data = generateEntityData();
                 output.innerHTML =
                     `<span class="entity-name">${data.name}</span>\n\n` +
                     `${data.description}\n\n` +
