@@ -203,13 +203,13 @@
         }
 
         #inventory-panel h3 {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: #6a5a30;
             letter-spacing: 2px;
             margin-bottom: 10px;
             text-align: center;
             border-bottom: 1px solid #2a2515;
-            padding-bottom: 6px;
+            padding-bottom: 8px;
         }
 
         #inventory-slots {
@@ -228,7 +228,8 @@
             align-items: center;
             cursor: pointer;
             transition: all 0.2s;
-            padding: 4px;
+            padding: 6px;
+            overflow: hidden;
         }
 
         .inv-slot:hover {
@@ -247,17 +248,19 @@
         }
 
         .inv-slot .item-name {
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             color: #50d450;
             text-align: center;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
+            line-height: 1.2;
         }
 
         .inv-slot .item-desc {
-            font-size: 0.5rem;
+            font-size: 0.55rem;
             color: #4a5a30;
             text-align: center;
-            margin-top: 3px;
+            margin-top: 4px;
+            line-height: 1.2;
         }
 
         .inv-slot.flashlight .item-name { color: #d4d450; }
