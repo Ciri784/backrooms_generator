@@ -379,7 +379,7 @@
             <button class="action-btn" onclick="moveOn()">MOVE</button>
             <button class="action-btn" onclick="search()">SEARCH</button>
             <button class="action-btn" onclick="hide()">HIDE</button>
-            <button class="action-btn" onclick="hide()">WAIT</button>
+            <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
         </div>
     </div>
 
@@ -424,9 +424,11 @@
 
         const SAFE_ACTIONS = {
             "Wretches": "RUN", "Faceless": "HIDE", "Smiler": "CLOSE EYES",
-            "Deathmoth": "STAY STILL", "Partygoers": "DON'T DISTURB",
+            "Deathmoth": "HOLD STILL", "Partygoers": "DON'T DISTURB",
             "The Thing That Tastes Color": "HOLD BREATH", "Cursor": "RUN", "Skinless": "RUN",
         };
+
+        const ENTITY_OBSERVE_KNOWLEDGE = {}; // Track knowledge gained from observing entities
 
         let state = {};
 
@@ -607,12 +609,30 @@
             if (chance(0.3)) {
                 const item = addItem();
                 if (item) {
-                    narrative(`You wait.\n\nSomething falls from a shelf: ${item.name}\n${item.desc}`, "item");
+                    narrative(`You hold still.\n\nSomething falls from a shelf: ${item.name}\n${item.desc}`, "item");
                 } else {
-                    narrative(`You wait.\n\nNothing happens. Time passes.`, "");
+                    narrative(`You hold still.\n\nNothing happens. Time passes.`, "");
                 }
             } else {
-                narrative(`You wait.\n\nThe hum continues. The light flickers. Nothing changes.`, "");
+                narrative(`You hold still.\n\nThe hum continues. The light flickers. Nothing changes.`, "");
+            }
+        }
+
+        function holdStill() {
+            if (state.inEncounter) {
+                entityEncounter("HOLD STILL");
+                return;
+            }
+            state.rooms++;
+            updateUI();
+
+            if (chance(0.5)) {
+                narrative(`You stay completely still.\n\nThe sounds fade. You're alone. For now.`, "");
+            } else {
+                narrative(`You freeze. You hear something getting closer.\n\nIt knows you're here.`, "");
+                if (chance(0.5)) {
+                    setTimeout(spawnEntity, 500);
+                }
             }
         }
 
@@ -631,17 +651,35 @@
             document.getElementById("actions").innerHTML = `
                 <button class="action-btn" onclick="entityEncounter('RUN')">RUN</button>
                 <button class="action-btn" onclick="entityEncounter('HIDE')">HIDE</button>
-                <button class="action-btn" onclick="entityEncounter('STAY STILL')">STILL</button>
+                <button class="action-btn" onclick="entityEncounter('HOLD STILL')">HOLD STILL</button>
                 <button class="action-btn" onclick="entityEncounter('${entity.action}')">${entity.action}</button>
             `;
 
-            // Avoid duplicate buttons - if recommended action matches a base action, change STILL to ESCAPE
+            // Avoid duplicate buttons - if recommended action matches a base action, change 4th to OBSERVE
             const actions = document.querySelectorAll('.action-btn');
             const btnTexts = Array.from(actions).map(b => b.textContent);
             const duplicates = btnTexts.filter(t => t === entity.action).length;
             if (duplicates > 1) {
-                actions[2].textContent = 'ESCAPE';
-                actions[2].onclick = () => entityEncounter('ESCAPE');
+                actions[3].textContent = 'OBSERVE';
+                actions[3].onclick = () => entityEncounter('OBSERVE');
+            }
+        }
+
+        function spawnEntityForEncounter(entityName) {
+            // Re-spawn the same entity after OBSERVE, with different buttons (no 4th option)
+            const entity = ENTITY_TEMPLATES[entityName];
+            document.getElementById("actions").innerHTML = `
+                <button class="action-btn" onclick="entityEncounter('RUN')">RUN</button>
+                <button class="action-btn" onclick="entityEncounter('HIDE')">HIDE</button>
+                <button class="action-btn" onclick="entityEncounter('HOLD STILL')">HOLD STILL</button>
+                <button class="action-btn" onclick="entityEncounter('${entity.action}')">${entity.action}</button>
+            `;
+            const actions = document.querySelectorAll('.action-btn');
+            const btnTexts = Array.from(actions).map(b => b.textContent);
+            const duplicates = btnTexts.filter(t => t === entity.action).length;
+            if (duplicates > 1) {
+                actions[3].textContent = 'OBSERVE';
+                actions[3].onclick = () => entityEncounter('OBSERVE');
             }
         }
 
@@ -652,11 +690,28 @@
             const entity = ENTITY_TEMPLATES[entityName];
             let escapeChance = entity.escapeChance;
 
-            // ESCAPE is always available but has lower chance
-            if (action === 'ESCAPE') {
-                escapeChance = 0.3;
+            if (action === 'OBSERVE') {
+                // High risk, no immediate reward - just observe
+                narrative(`You keep your eyes on the ${entityName}.\n\nYou study its movements, its patterns.\n\nThis knowledge may help you survive the next encounter.`, "");
+                // After observing, must choose another action this turn
+                state.observedEntity = entityName;
+                state.inEncounter = false;
+                setTimeout(() => {
+                    if (state.stability > 0) {
+                        narrative(`The ${entityName} is still here.\n\nWhat will you do?`, "entity");
+                        state.inEncounter = true;
+                        spawnEntityForEncounter(entityName);
+                    }
+                }, 1500);
+                updateUI();
+                return;
             } else {
                 if (action === SAFE_ACTIONS[entityName]) escapeChance += 0.25;
+            }
+
+            // Apply knowledge bonus from previous observation
+            if (ENTITY_OBSERVE_KNOWLEDGE[entityName]) {
+                escapeChance += ENTITY_OBSERVE_KNOWLEDGE[entityName];
             }
 
             if (state.hasFlashlight && entityName === "Wretches") escapeChance += 0.3;
@@ -666,9 +721,14 @@
 
             if (chance(escapeChance)) {
                 state.escaped++;
+                // Successful observation learns the entity's safe action for next time
+                if (state.observedEntity === entityName) {
+                    ENTITY_OBSERVE_KNOWLEDGE[entityName] = 0.15;
+                }
                 narrative(`You ${action}.\n\nIt works. The ${entityName} loses interest and fades into the shadows.\n\nYou escaped.`, "");
                 state.hasFlashlight = false;
                 state.damageReduction = 0;
+                state.observedEntity = null;
             } else {
                 let damage = entity.damage;
                 if (state.damageReduction > 0) damage = Math.max(5, damage - state.damageReduction);
@@ -676,6 +736,7 @@
                 narrative(`You ${action}.\n\nThe ${entityName} catches you.\n\n-${damage}% Stability`, "entity");
                 state.hasFlashlight = false;
                 state.damageReduction = 0;
+                state.observedEntity = null;
             }
 
             state.currentEntity = null;
@@ -685,7 +746,7 @@
                 <button class="action-btn" onclick="moveOn()">MOVE</button>
                 <button class="action-btn" onclick="search()">SEARCH</button>
                 <button class="action-btn" onclick="hide()">HIDE</button>
-                <button class="action-btn" onclick="wait()">WAIT</button>
+                <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
             `;
 
             updateUI();
@@ -699,7 +760,7 @@
                 <button class="action-btn" onclick="moveOn()">MOVE</button>
                 <button class="action-btn" onclick="search()">SEARCH</button>
                 <button class="action-btn" onclick="hide()">HIDE</button>
-                <button class="action-btn" onclick="wait()">WAIT</button>
+                <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
             `;
             updateUI();
             narrative("You wake up somewhere you shouldn't be. Yellow light flickers above. The air smells wrong. You need to find a way out.\n\nExplore carefully. Find items. Avoid entities. Survive.");
