@@ -283,6 +283,31 @@
         .action-btn:active { background: rgba(201, 180, 88, 0.2); }
         .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
+        #knowledge-panel {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #3a3520;
+        }
+
+        #knowledge-header {
+            font-size: 0.65rem;
+            color: #6a5a30;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        #knowledge-list {
+            font-size: 0.75rem;
+            color: #8a7a3a;
+            line-height: 1.6;
+        }
+
+        #knowledge-list .known-entity {
+            color: #c9b458;
+        }
+
         #game-over {
             display: none;
             position: fixed;
@@ -355,6 +380,11 @@
             </div>
         </div>
 
+        <div id="knowledge-panel">
+            <div id="knowledge-header">KNOWLEDGE</div>
+            <div id="knowledge-list">No observations yet.</div>
+        </div>
+
         <div id="level-info">
             <div id="level-name">LEVEL 0 — THE LOBBY</div>
             <div id="room-desc">Office maze. Yellow walls. The hum.</div>
@@ -407,7 +437,7 @@
             "Wretches": { desc: "Crawling things. They used to be human. They skitter in the dark.", action: "RUN", escapeChance: 0.6, damage: 20 },
             "Faceless": { desc: "No face. Just smooth skin where features should be. It's looking for something.", action: "HIDE", escapeChance: 0.4, damage: 15 },
             "Smiler": { desc: "It smiles. Always. Its face frozen in joy. But its eyes are wrong.", action: "CLOSE EYES", escapeChance: 0.5, damage: 25 },
-            "Deathmoth": { desc: "Moths the size of dogs. They circle lights that don't exist.", action: "STAY STILL", escapeChance: 0.8, damage: 5 },
+            "Deathmoth": { desc: "Moths the size of dogs. They circle lights that don't exist.", action: "HOLD STILL", escapeChance: 0.8, damage: 5 },
             "Partygoers": { desc: "They wear colorful masks. They dance in rooms that shouldn't exist.", action: "DON'T DISTURB", escapeChance: 0.7, damage: 10 },
             "The Thing That Tastes Color": { desc: "A wet, clicking sound. Then it appears. It tilts its head. Tasting the air.", action: "HOLD BREATH", escapeChance: 0.3, damage: 35 },
             "Cursor": { desc: "A shadow that moves wrong. It drifts. It has too many joints.", action: "RUN", escapeChance: 0.5, damage: 30 },
@@ -471,6 +501,19 @@
             document.getElementById("room-desc").textContent = lv.desc;
 
             renderInventory();
+            renderKnowledge();
+        }
+
+        function renderKnowledge() {
+            const knowledgeDiv = document.getElementById("knowledge-list");
+            const known = Object.keys(ENTITY_OBSERVE_KNOWLEDGE);
+            if (known.length === 0) {
+                knowledgeDiv.innerHTML = "No observations yet.";
+            } else {
+                knowledgeDiv.innerHTML = known.map(name =>
+                    `<span class="known-entity">${name}</span> (+${Math.round(ENTITY_OBSERVE_KNOWLEDGE[name] * 100)}%)`
+                ).join("<br>");
+            }
         }
 
         function renderInventory() {
