@@ -8,7 +8,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: #0a0a05;
+            background-color: #1a1a0f;
             color: #c9b458;
             font-family: 'Courier New', monospace;
             min-height: 100vh;
@@ -22,9 +22,7 @@
             content: "";
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: 
-                radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.5) 100%),
-                repeating-linear-gradient(0deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2) 1px, transparent 1px, transparent 2px);
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
             pointer-events: none;
             z-index: 1000;
         }
@@ -33,36 +31,18 @@
             content: "";
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(201, 180, 88, 0.02);
+            background: rgba(201, 180, 88, 0.03);
             pointer-events: none;
             z-index: 999;
         }
 
         @keyframes flicker {
-            0% { opacity: 0.97; }
-            5% { opacity: 0.95; }
-            10% { opacity: 0.97; }
-            15% { opacity: 0.94; }
-            20% { opacity: 0.98; }
-            25% { opacity: 0.96; }
-            30% { opacity: 0.97; }
-            35% { opacity: 0.95; }
-            40% { opacity: 0.98; }
-            45% { opacity: 0.96; }
-            50% { opacity: 0.97; }
-            55% { opacity: 0.95; }
-            60% { opacity: 0.98; }
-            65% { opacity: 0.96; }
-            70% { opacity: 0.97; }
-            75% { opacity: 0.94; }
-            80% { opacity: 0.97; }
-            85% { opacity: 0.95; }
-            90% { opacity: 0.98; }
-            95% { opacity: 0.96; }
-            100% { opacity: 0.97; }
+            0% { opacity: 1; }
+            50% { opacity: 0.98; }
+            100% { opacity: 1; }
         }
 
-        body { animation: flicker 0.15s infinite; }
+        body { animation: flicker 0.1s infinite; }
 
         #noise {
             position: fixed;
@@ -76,8 +56,8 @@
         #game {
             max-width: 750px;
             width: 100%;
-            background: rgba(20, 20, 10, 0.95);
-            border: 1px solid #3a3520;
+            background: rgba(30, 30, 20, 0.95);
+            border: 1px solid #3a3a25;
             padding: 30px;
             position: relative;
         }
@@ -86,9 +66,9 @@
             content: "";
             position: absolute;
             top: 0; left: 0; right: 0;
-            height: 2px;
+            height: 3px;
             background: linear-gradient(90deg, transparent, #c9b458, transparent);
-            opacity: 0.4;
+            opacity: 0.3;
         }
 
         h1 {
@@ -434,11 +414,11 @@
         };
 
         const ITEMS = [
-            { id: "flashlight", name: "Flashlight", desc: "Fends Wretches", effect: "escape_bonus", value: 0.25, cssClass: "flashlight" },
-            { id: "painkiller", name: "Painkiller", desc: "-10 DMG", effect: "damage_reduction", value: 10, cssClass: "painkiller" },
-            { id: "almond", name: "Almond Water", desc: "??", effect: "stability_restore", value: 20, cssClass: "almond" },
-            { id: "bandage", name: "Bandage", desc: "+20 HP", effect: "stability_restore", value: 20, cssClass: "" },
-            { id: "gauss", name: "Gauss Meter", desc: "Detect", effect: "detect", value: 1, cssClass: "" },
+            { id: "flashlight", name: "Flashlight", desc: "Wretches fear light", effect: "escape_bonus", value: 0.25, cssClass: "flashlight" },
+            { id: "painkiller", name: "Painkiller", desc: "-10% Stability loss", effect: "damage_reduction", value: 10, cssClass: "painkiller" },
+            { id: "almond", name: "Almond Water", desc: "Strange effect", effect: "stability_restore", value: 20, cssClass: "almond" },
+            { id: "bandage", name: "Bandage", desc: "+20% Stability", effect: "stability_restore", value: 20, cssClass: "" },
+            { id: "gauss", name: "Gauss Meter", desc: "Detects entities", effect: "detect", value: 1, cssClass: "" },
         ];
 
         const SAFE_ACTIONS = {
@@ -548,7 +528,7 @@
                     break;
                 case "damage_reduction":
                     state.damageReduction = item.value;
-                    narrative(`You use ${item.name}.\n\nDamage reduced by ${item.value} for next encounter.`, "item");
+                    narrative(`You use ${item.name}.\n\nStability loss reduced by ${item.value}% for next encounter.`, "item");
                     break;
                 case "escape_bonus":
                     state.hasFlashlight = true;
@@ -677,7 +657,7 @@
                 let damage = entity.damage;
                 if (state.damageReduction > 0) damage = Math.max(5, damage - state.damageReduction);
                 state.stability = clamp(state.stability - damage, 0, 100);
-                narrative(`You ${action}.\n\nThe ${entityName} catches you. Pain.\n\n-${damage}% Stability`, "entity");
+                narrative(`You ${action}.\n\nThe ${entityName} catches you.\n\n-${damage}% Stability`, "entity");
                 state.hasFlashlight = false;
                 state.damageReduction = 0;
             }
