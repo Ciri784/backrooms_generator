@@ -164,12 +164,13 @@
 
         #narrative {
             min-height: 130px;
-            padding: 15px;
-            background: rgba(0,0,0,0.4);
+            padding: 18px;
+            background: rgba(0,0,0,0.5);
             border-left: 2px solid #c9b458;
-            font-size: 0.95rem;
+            font-size: 1rem;
             line-height: 1.8;
             white-space: pre-wrap;
+            overflow-x: auto;
         }
 
         #narrative.event { border-left-color: #d45050; }
@@ -416,8 +417,8 @@
         const ITEMS = [
             { id: "flashlight", name: "Flashlight", desc: "Wretches fear light", effect: "escape_bonus", value: 0.25, cssClass: "flashlight" },
             { id: "painkiller", name: "Painkiller", desc: "-10% Stability loss", effect: "damage_reduction", value: 10, cssClass: "painkiller" },
-            { id: "almond", name: "Almond Water", desc: "Strange effect", effect: "stability_restore", value: 20, cssClass: "almond" },
-            { id: "bandage", name: "Bandage", desc: "+20% Stability", effect: "stability_restore", value: 20, cssClass: "" },
+            { id: "almond", name: "Almond Water", desc: "Stability +25%", effect: "stability_restore", value: 25, cssClass: "almond" },
+            { id: "bandage", name: "Bandage", desc: "Stability +15%", effect: "stability_restore", value: 15, cssClass: "" },
             { id: "gauss", name: "Gauss Meter", desc: "Detects entities", effect: "detect", value: 1, cssClass: "" },
         ];
 
@@ -524,7 +525,7 @@
             switch (item.effect) {
                 case "stability_restore":
                     state.stability = clamp(state.stability + item.value, 0, 100);
-                    narrative(`You use ${item.name}. ${item.desc === "???" ? "" : item.desc}\n\n+${item.value}% Stability`, "item");
+                    narrative(`You use ${item.name}.\n\n${item.desc}\n\nStability restored.`, "item");
                     break;
                 case "damage_reduction":
                     state.damageReduction = item.value;
@@ -633,6 +634,15 @@
                 <button class="action-btn" onclick="entityEncounter('STAY STILL')">STILL</button>
                 <button class="action-btn" onclick="entityEncounter('${entity.action}')">${entity.action}</button>
             `;
+
+            // Avoid duplicate buttons - if recommended action matches a base action, change STILL to ESCAPE
+            const actions = document.querySelectorAll('.action-btn');
+            const btnTexts = Array.from(actions).map(b => b.textContent);
+            const duplicates = btnTexts.filter(t => t === entity.action).length;
+            if (duplicates > 1) {
+                actions[2].textContent = 'ESCAPE';
+                actions[2].onclick = () => entityEncounter('ESCAPE');
+            }
         }
 
         function entityEncounter(action) {
@@ -642,7 +652,13 @@
             const entity = ENTITY_TEMPLATES[entityName];
             let escapeChance = entity.escapeChance;
 
-            if (action === SAFE_ACTIONS[entityName]) escapeChance += 0.25;
+            // ESCAPE is always available but has lower chance
+            if (action === 'ESCAPE') {
+                escapeChance = 0.3;
+            } else {
+                if (action === SAFE_ACTIONS[entityName]) escapeChance += 0.25;
+            }
+
             if (state.hasFlashlight && entityName === "Wretches") escapeChance += 0.3;
 
             const hasAlmond = state.inventory.some(i => i.id === "almond");
