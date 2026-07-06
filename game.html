@@ -471,7 +471,7 @@
             state = {
                 stability: 100, level: 0, rooms: 0, escaped: 0,
                 inventory: [], hasFlashlight: false, damageReduction: 0,
-                currentEntity: null, inEncounter: false,
+                currentEntity: null, inEncounter: false, inTransition: false,
             };
         }
 
@@ -572,7 +572,7 @@
         }
 
         function useItem(slotIndex) {
-            if (state.inEncounter) return;
+            if (state.inEncounter || state.inTransition) return;
             const item = state.inventory[slotIndex];
             if (!item) return;
 
@@ -605,7 +605,7 @@
 
             if (chance(0.12) && state.level < 7) {
                 state.level++;
-                narrative(`You find a stairway leading ${state.level > 4 ? "up" : "down"}. You descend into Level ${state.level}.\n\n${getCurrentLevel().desc}`, "");
+                descendToLevel(state.level);
             } else {
                 narrative(`You move forward through the ${getCurrentLevel().name}.\n\n${generateRoomDesc()}`);
             }
@@ -617,8 +617,46 @@
             }
         }
 
+        // Level transition: locks input, plays a multi-step descent sequence,
+        // then unlocks with the room description. Each line lands on its own beat.
+        function descendToLevel(newLevel) {
+            const lv = getCurrentLevel();
+            const direction = newLevel > 4 ? "up" : "down";
+            const lines = [
+                `The floor shifts under your feet.`,
+                `You find a passage leading ${direction}.`,
+                `The air changes. The hum drops in pitch.`,
+                `You step through.`,
+                `LEVEL ${newLevel} — ${lv.name}`,
+                lv.desc,
+            ];
+            const el = document.getElementById("narrative");
+            el.className = "";
+            el.textContent = lines[0];
+            state.inTransition = true;
+            setActionButtonsEnabled(false);
+
+            let i = 1;
+            const tick = () => {
+                if (i >= lines.length) {
+                    state.inTransition = false;
+                    setActionButtonsEnabled(true);
+                    updateUI();
+                    return;
+                }
+                el.textContent = el.textContent + "\n\n" + lines[i];
+                i++;
+                setTimeout(tick, 700);
+            };
+            setTimeout(tick, 700);
+        }
+
+        function setActionButtonsEnabled(enabled) {
+            document.querySelectorAll(".action-btn").forEach(b => { b.disabled = !enabled; });
+        }
+
         function search() {
-            if (state.inEncounter) return;
+            if (state.inEncounter || state.inTransition) return;
             state.rooms++;
 
             const found = addItem();
@@ -638,6 +676,7 @@
         }
 
         function hide() {
+            if (state.inTransition) return;
             if (state.inEncounter) {
                 entityEncounter("HIDE");
                 return;
@@ -656,7 +695,7 @@
         }
 
         function wait() {
-            if (state.inEncounter) return;
+            if (state.inEncounter || state.inTransition) return;
             state.rooms++;
             updateUI();
 
@@ -691,7 +730,7 @@
         }
 
         function spawnEntity() {
-            if (state.inEncounter) return;
+            if (state.inEncounter || state.inTransition) return;
             state.inEncounter = true;
 
             const lv = getCurrentLevel();
@@ -751,6 +790,7 @@
                 state.observedEntity = entityName;
                 state.inEncounter = false;
                 setTimeout(() => {
+                    if (state.inTransition || state.stability <= 0) return;
                     if (state.stability > 0) {
                         narrative(`The ${entityName} is still here.\n\nWhat will you do?`, "entity");
                         state.inEncounter = true;
