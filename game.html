@@ -422,6 +422,7 @@
         <h2>YOU DIED</h2>
         <p id="death-msg">The Backrooms claimed another victim.</p>
         <p id="death-record"></p>
+        <p id="death-lastwords"></p>
         <p id="death-stats"></p>
         <button id="restart-btn" onclick="startGame()">TRY AGAIN</button>
         <button id="forget-btn" onclick="forgetRecords()">FORGET EVERYTHING</button>
@@ -639,6 +640,8 @@
                 currentBoss: null, inBossEncounter: false,
                 currentEnvEvent: null,
                 bossesDefeated: Array(LEVELS.length).fill(false),
+                roomsPerLevel: Array(LEVELS.length).fill(0),
+                lastNarrative: "",
             };
         }
 
@@ -714,6 +717,16 @@
             const el = document.getElementById("narrative");
             el.textContent = text;
             el.className = cls || "";
+            // Side effects: every narrative beat in a non-transition state
+            // counts as the player being present in this room on this level.
+            // Skipped during transition so the level-down sequence doesn't
+            // double-count the arrival room.
+            if (!state.inTransition && state.level != null) {
+                state.roomsPerLevel[state.level] = (state.roomsPerLevel[state.level] || 0) + 1;
+            }
+            // Keep the last 280 chars of the most recent narrative so we
+            // can show it as "last words" on the death screen.
+            if (text) state.lastNarrative = String(text).slice(-280);
         }
 
         function checkGameOver() {
@@ -725,19 +738,24 @@
                     "You should have run when you had the chance.",
                 ];
                 document.getElementById("death-msg").textContent = pick(msgs);
-                // Pin the cause of death to whatever was active at the moment
+                // Pin the cause of death to whatever was active at the moment,
+                // tagged with the level so reading past deaths reads like a wiki.
+                const lv = getCurrentLevel();
+                const where = lv ? `in LEVEL ${lv.num} — ${lv.name}` : "somewhere unnamed";
                 const cause = state.currentBoss
-                    ? `Killed by ${state.currentBoss}`
+                    ? `Killed by ${state.currentBoss} ${where}`
                     : state.currentEnvEvent
-                    ? `Consumed by ${state.currentEnvEvent.id.replace(/_/g, " ")}`
+                    ? `Consumed by ${state.currentEnvEvent.id.replace(/_/g, " ")} ${where}`
                     : state.currentEntity
-                    ? `Taken by ${state.currentEntity}`
-                    : "The architecture collapsed around you";
+                    ? `Taken by ${state.currentEntity} ${where}`
+                    : `The architecture collapsed around you ${where}`;
                 saveDeathRecord({
                     level: state.level,
                     rooms: state.rooms,
                     cause: cause,
                     escaped: state.escaped,
+                    lastWords: state.lastNarrative || "",
+                    roomsPerLevel: (state.roomsPerLevel || []).slice(),
                 });
                 renderDeathStats();
                 document.getElementById("game-over").classList.add("show");
@@ -802,10 +820,17 @@
             const agg = getAggregate();
             const recEl = document.getElementById("death-record");
             const statsEl = document.getElementById("death-stats");
+            const wordsEl = document.getElementById("death-lastwords");
             if (last) {
                 recEl.textContent = `Last run: LEVEL ${last.level} — ${getLevelName(last.level)} · ${last.rooms} rooms · ${last.cause}`;
+                if (last.lastWords) {
+                    wordsEl.textContent = `Last words: "${last.lastWords}"`;
+                } else {
+                    wordsEl.textContent = "";
+                }
             } else {
                 recEl.textContent = "";
+                wordsEl.textContent = "";
             }
             statsEl.textContent = `Lifetime · deaths: ${agg.totalDeaths} · best level: ${agg.bestLevel} · total escaped: ${agg.totalEscaped}`;
         }
@@ -1304,17 +1329,28 @@
                 <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
             `;
             updateUI();
-            // Opening narrative: include last death record + lifetime stats
+            // Opening narrative: include last death record + lifetime stats,
+            // plus a "you remember this floor" beat if the player has
+            // cleared a meaningful number of rooms on it before.
             const last = getLastRecord();
             const agg = getAggregate();
             let opening = "You wake up somewhere you shouldn't be. Yellow light flickers above. The air smells wrong. You need to find a way out.\n\nExplore carefully. Find items. Avoid entities. Survive.";
+            let prefix = "";
             if (last) {
                 const death = agg.totalDeaths === 1 ? "death" : "deaths";
-                opening = `(Last run: LEVEL ${last.level} — ${getLevelName(last.level)} · ${last.rooms} rooms · ${last.cause})\n(Lifetime: ${agg.totalDeaths} ${death} · best level ${agg.bestLevel} · ${agg.totalEscaped} escaped)\n\n` + opening;
+                prefix += `(Last run: LEVEL ${last.level} — ${getLevelName(last.level)} · ${last.rooms} rooms · ${last.cause})\n`;
+                if (last.lastWords) prefix += `(Last words: "${last.lastWords}")\n`;
+                prefix += `(Lifetime: ${agg.totalDeaths} ${death} · best level ${agg.bestLevel} · ${agg.totalEscaped} escaped)\n\n`;
             } else if (agg.totalDeaths > 0) {
-                opening = `(Lifetime: ${agg.totalDeaths} death${agg.totalDeaths === 1 ? "" : "s"} · best level ${agg.bestLevel} · ${agg.totalEscaped} escaped)\n\n` + opening;
+                prefix += `(Lifetime: ${agg.totalDeaths} death${agg.totalDeaths === 1 ? "" : "s"} · best level ${agg.bestLevel} · ${agg.totalEscaped} escaped)\n\n`;
             }
-            narrative(opening);
+            // "You remember this floor." beat — only if we have prior
+            // data for level 0 and a non-trivial number of rooms.
+            if (last && last.roomsPerLevel && last.roomsPerLevel[0] >= 5) {
+                const startLv = last.roomsPerLevel[0];
+                prefix += `(You remember LEVEL 0 — ${getLevelName(0)}. ${startLv} rooms. The hum was the same.)\n\n`;
+            }
+            narrative(prefix + opening);
         }
 
         startGame();
