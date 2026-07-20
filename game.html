@@ -428,15 +428,79 @@
         const MAX_INVENTORY = 4;
 
         const LEVELS = [
-            { num: 0, name: "THE LOBBY", desc: "Office maze. Yellow walls. The hum.", entities: ["Wretches", "Faceless"] },
-            { num: 1, name: "THE PACKING ROOMS", desc: "Wooden crates everywhere. Some are open.", entities: ["Wretches", "Smiler"] },
-            { num: 2, name: "PIPE HEAVEN", desc: "An endless network of pipes. It hums.", entities: ["Deathmoth", "Cursor"] },
-            { num: 3, name: "THE OFFICES", desc: "Filing cabinets. Papers everywhere.", entities: ["Faceless", "Skinless"] },
-            { num: 4, name: "ABANDONED CONCRETE", desc: "Structural supports that make no sense.", entities: ["Smiler", "Partygoers"] },
-            { num: 5, name: "HOTELS & ROOMS", desc: "A hotel that goes on forever.", entities: ["Partygoers", "The Thing That Tastes Color"] },
-            { num: 6, name: "THE WATER ZONE", desc: "Pools of liquid in dark rooms.", entities: ["The Thing That Tastes Color", "Cursor"] },
-            { num: 7, name: "THE GOLF COURSE", desc: "An endless course. The flag is always the same distance away.", entities: ["Cursor", "Skinless"] },
+            { num: 0, name: "THE LOBBY", desc: "Office maze. Yellow walls. The hum.", entities: ["Wretches", "Faceless"], boss: "The Hum Itself" },
+            { num: 1, name: "THE PACKING ROOMS", desc: "Wooden crates everywhere. Some are open.", entities: ["Wretches", "Smiler"], boss: "The Crate Watcher" },
+            { num: 2, name: "PIPE HEAVEN", desc: "An endless network of pipes. It hums.", entities: ["Deathmoth", "Cursor"], boss: "The Pipe Choir" },
+            { num: 3, name: "THE OFFICES", desc: "Filing cabinets. Papers everywhere.", entities: ["Faceless", "Skinless"], boss: "The Filing Ghost" },
+            { num: 4, name: "ABANDONED CONCRETE", desc: "Structural supports that make no sense.", entities: ["Smiler", "Partygoers"], boss: "The Concrete Mouth" },
+            { num: 5, name: "HOTELS & ROOMS", desc: "A hotel that goes on forever.", entities: ["Partygoers", "The Thing That Tastes Color"], boss: "Room 5 Occupant" },
+            { num: 6, name: "THE WATER ZONE", desc: "Pools of liquid in dark rooms.", entities: ["The Thing That Tastes Color", "Cursor"], boss: "The Drowned Conductor" },
+            { num: 7, name: "THE GOLF COURSE", desc: "An endless course. The flag is always the same distance away.", entities: ["Cursor", "Skinless"], boss: "The Final Flag" },
         ];
+
+        // Boss entities — one per level, always triggered on level transition
+        // These are the level's "final memory". They demand a specific safe action.
+        // Harder than regular entities: lower escape chance, higher damage.
+        const BOSS_TEMPLATES = {
+            "The Hum Itself": {
+                desc: "The fluorescent hum is louder here. It isn't coming from the lights anymore. It is coming from inside the walls. From inside you.",
+                action: "HOLD STILL",
+                escapeChance: 0.35,
+                damage: 35,
+                intro: "The yellow light stops flickering. It stares back.",
+            },
+            "The Crate Watcher": {
+                desc: "A wooden crate in the corner is breathing. Its slats expand and contract in slow, patient rhythm. It has been waiting for you.",
+                action: "HIDE",
+                escapeChance: 0.30,
+                damage: 40,
+                intro: "Every open crate in the room turns toward you at once.",
+            },
+            "The Pipe Choir": {
+                desc: "The pipes are singing. A low, harmonic drone that vibrates in your molars. A face is forming in the condensation on the largest pipe.",
+                action: "CLOSE EYES",
+                escapeChance: 0.30,
+                damage: 40,
+                intro: "The water stops. The pipes speak.",
+            },
+            "The Filing Ghost": {
+                desc: "A filing cabinet drawer opens by itself. Papers shuffle. A hand — translucent, made of stapled receipts — reaches out and points at you.",
+                action: "RUN",
+                escapeChance: 0.35,
+                damage: 35,
+                intro: "Every drawer in the office slides open in sequence.",
+            },
+            "The Concrete Mouth": {
+                desc: "A support beam has split down the middle. Inside: teeth. Concrete teeth. They are chewing slowly on the air itself.",
+                action: "HIDE",
+                escapeChance: 0.25,
+                damage: 45,
+                intro: "The walls lean in. They are listening.",
+            },
+            "Room 5 Occupant": {
+                desc: "The door to Room 5 is open. It has never been open before. Inside, a figure in a concierge uniform smiles. Its face is yours.",
+                action: "HOLD BREATH",
+                escapeChance: 0.25,
+                damage: 50,
+                intro: "The hallway numbers skip from 3 to 5. Room 4 is gone.",
+            },
+            "The Drowned Conductor": {
+                desc: "A figure in soaked formal wear stands in the deepest pool, arms raised as if leading an orchestra. The water is rising.",
+                action: "HOLD BREATH",
+                escapeChance: 0.20,
+                damage: 55,
+                intro: "The water level rises without a source.",
+            },
+            "The Final Flag": {
+                desc: "The flag is right there. It has always been right there. As you approach, the flag unfolds — and it is made of skin. It is waving at you.",
+                action: "KEEP QUIET",
+                escapeChance: 0.20,
+                damage: 60,
+                intro: "The grass under your feet starts breathing.",
+            },
+        };
+
+        // Track which bosses have been defeated this run (managed inside initState)
 
         const ENTITY_TEMPLATES = {
             "Wretches": { desc: "Crawling things. They used to be human. They skitter in the dark.", action: "RUN", escapeChance: 0.6, damage: 20 },
@@ -472,6 +536,8 @@
                 stability: 100, level: 0, rooms: 0, escaped: 0,
                 inventory: [], hasFlashlight: false, damageReduction: 0,
                 currentEntity: null, inEncounter: false, inTransition: false,
+                currentBoss: null, inBossEncounter: false,
+                bossesDefeated: Array(LEVELS.length).fill(false),
             };
         }
 
@@ -619,6 +685,8 @@
 
         // Level transition: locks input, plays a multi-step descent sequence,
         // then unlocks with the room description. Each line lands on its own beat.
+        // When arriving at a new level, the level's boss must be faced before
+        // normal play resumes. Bosses are the "final memory" of each floor.
         function descendToLevel(newLevel) {
             const lv = getCurrentLevel();
             const direction = newLevel > 4 ? "up" : "down";
@@ -640,8 +708,13 @@
             const tick = () => {
                 if (i >= lines.length) {
                     state.inTransition = false;
-                    setActionButtonsEnabled(true);
                     updateUI();
+                    // Boss encounter: only on first visit, not on Level 7 (it's the final floor).
+                    if (lv.boss && !state.bossesDefeated[newLevel] && newLevel < LEVELS.length - 1) {
+                        setTimeout(spawnBossEncounter, 600);
+                    } else {
+                        setActionButtonsEnabled(true);
+                    }
                     return;
                 }
                 el.textContent = el.textContent + "\n\n" + lines[i];
@@ -773,6 +846,122 @@
             if (duplicates > 1) {
                 actions[3].textContent = 'OBSERVE';
                 actions[3].onclick = () => entityEncounter('OBSERVE');
+            }
+        }
+
+        // ---- Boss encounter: one per level, triggered on first visit ----
+        // Bosses demand a specific safe action. Inventory is locked during
+        // the encounter to force a real decision. Failing the safe action
+        // deals heavy damage but does NOT insta-kill — you get a brief
+        // recovery window to try again with the lesson learned.
+        function spawnBossEncounter() {
+            if (state.inEncounter || state.inBossEncounter || state.inTransition) return;
+            const lv = getCurrentLevel();
+            const bossName = lv.boss;
+            const boss = BOSS_TEMPLATES[bossName];
+            if (!boss) {
+                setActionButtonsEnabled(true);
+                return;
+            }
+
+            state.inBossEncounter = true;
+            state.currentBoss = bossName;
+
+            narrative(
+                `⚠ BOSS — ${bossName.toUpperCase()} ⚠\n\n${boss.intro}\n\n${boss.desc}\n\nRecommended: ${boss.action}`,
+                "entity"
+            );
+
+            // Same button layout as regular entities, with OBSERVE on collision
+            document.getElementById("actions").innerHTML = `
+                <button class="action-btn" onclick="bossEncounter('RUN')">RUN</button>
+                <button class="action-btn" onclick="bossEncounter('HIDE')">HIDE</button>
+                <button class="action-btn" onclick="bossEncounter('HOLD STILL')">HOLD STILL</button>
+                <button class="action-btn" onclick="bossEncounter('${boss.action}')">${boss.action}</button>
+            `;
+            const actions = document.querySelectorAll('.action-btn');
+            const btnTexts = Array.from(actions).map(b => b.textContent);
+            const duplicates = btnTexts.filter(t => t === boss.action).length;
+            if (duplicates > 1) {
+                actions[3].textContent = 'OBSERVE';
+                actions[3].onclick = () => bossEncounter('OBSERVE');
+            }
+            // Boss disables inventory use — you have to decide with what you know
+            disableInventory();
+        }
+
+        function disableInventory() {
+            document.querySelectorAll('.inv-slot').forEach(s => {
+                s.classList.add('locked');
+                s.onclick = null;
+            });
+        }
+
+        function enableInventory() {
+            // re-render restores onclick handlers via renderInventory
+            renderInventory();
+        }
+
+        function bossEncounter(action) {
+            if (!state.inBossEncounter) return;
+            const bossName = state.currentBoss;
+            const boss = BOSS_TEMPLATES[bossName];
+            let escapeChance = boss.escapeChance;
+
+            if (action === 'OBSERVE') {
+                narrative(
+                    `You study the ${bossName}.\n\nThe recommended action is: ${boss.action}\n\nYou have one chance. Make it count.`,
+                    ""
+                );
+                state.observedBoss = bossName;
+                // Re-show the action buttons after a beat
+                setTimeout(() => {
+                    if (state.stability <= 0) return;
+                    narrative(
+                        `The ${bossName} is waiting.\n\nYou remember: ${boss.action}.\n\nWhat will you do?`,
+                        "entity"
+                    );
+                }, 1500);
+                return;
+            }
+
+            if (action === boss.action) escapeChance += 0.25;
+            if (state.observedBoss === bossName) escapeChance += 0.10;
+
+            if (chance(escapeChance)) {
+                state.escaped++;
+                state.bossesDefeated[state.level] = true;
+                narrative(
+                    `You ${action}.\n\nThe ${bossName} recoils. It dissolves into the architecture around you.\n\nYou survived. For now.`,
+                    ""
+                );
+                state.inBossEncounter = false;
+                state.currentBoss = null;
+                state.observedBoss = null;
+                setActionButtonsEnabled(true);
+                enableInventory();
+                // Restore normal action bar
+                document.getElementById("actions").innerHTML = `
+                    <button class="action-btn" onclick="moveOn()">MOVE</button>
+                    <button class="action-btn" onclick="search()">SEARCH</button>
+                    <button class="action-btn" onclick="hide()">HIDE</button>
+                    <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
+                `;
+                updateUI();
+            } else {
+                const damage = boss.damage;
+                narrative(
+                    `You ${action}.\n\nThe ${bossName} overwhelms you.\n\n-${damage}% Stability`,
+                    "entity"
+                );
+                state.stability = clamp(state.stability - damage, 0, 100);
+                state.observedBoss = null;
+                updateUI();
+                if (checkGameOver()) {
+                    state.inBossEncounter = false;
+                    state.currentBoss = null;
+                }
+                // Stay in boss encounter — player can try again with the lesson
             }
         }
 
