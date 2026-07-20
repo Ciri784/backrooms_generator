@@ -421,7 +421,10 @@
     <div id="game-over">
         <h2>YOU DIED</h2>
         <p id="death-msg">The Backrooms claimed another victim.</p>
+        <p id="death-record"></p>
+        <p id="death-stats"></p>
         <button id="restart-btn" onclick="startGame()">TRY AGAIN</button>
+        <button id="forget-btn" onclick="forgetRecords()">FORGET EVERYTHING</button>
     </div>
 
     <script>
@@ -722,10 +725,95 @@
                     "You should have run when you had the chance.",
                 ];
                 document.getElementById("death-msg").textContent = pick(msgs);
+                // Pin the cause of death to whatever was active at the moment
+                const cause = state.currentBoss
+                    ? `Killed by ${state.currentBoss}`
+                    : state.currentEnvEvent
+                    ? `Consumed by ${state.currentEnvEvent.id.replace(/_/g, " ")}`
+                    : state.currentEntity
+                    ? `Taken by ${state.currentEntity}`
+                    : "The architecture collapsed around you";
+                saveDeathRecord({
+                    level: state.level,
+                    rooms: state.rooms,
+                    cause: cause,
+                    escaped: state.escaped,
+                });
+                renderDeathStats();
                 document.getElementById("game-over").classList.add("show");
                 return true;
             }
             return false;
+        }
+
+        // ---- Persistent death records via localStorage ----
+        // Tracks the last 10 deaths plus lifetime aggregate stats.
+        // Shown on the death screen and on the opening narrative.
+        const RECORDS_KEY = "backrooms_records_v1";
+
+        function loadRecords() {
+            try {
+                const raw = localStorage.getItem(RECORDS_KEY);
+                if (!raw) return { deaths: [], totalDeaths: 0, bestLevel: 0, bestEscaped: 0, totalEscaped: 0 };
+                const parsed = JSON.parse(raw);
+                return Object.assign({ deaths: [], totalDeaths: 0, bestLevel: 0, bestEscaped: 0, totalEscaped: 0 }, parsed);
+            } catch (e) {
+                return { deaths: [], totalDeaths: 0, bestLevel: 0, bestEscaped: 0, totalEscaped: 0 };
+            }
+        }
+
+        function saveRecords(rec) {
+            try { localStorage.setItem(RECORDS_KEY, JSON.stringify(rec)); }
+            catch (e) { /* localStorage unavailable */ }
+        }
+
+        function saveDeathRecord(entry) {
+            const rec = loadRecords();
+            rec.deaths.unshift(entry);
+            if (rec.deaths.length > 10) rec.deaths.length = 10;
+            rec.totalDeaths = (rec.totalDeaths || 0) + 1;
+            rec.bestLevel = Math.max(rec.bestLevel || 0, entry.level);
+            rec.bestEscaped = Math.max(rec.bestEscaped || 0, entry.escaped);
+            rec.totalEscaped = (rec.totalEscaped || 0) + (entry.escaped || 0);
+            saveRecords(rec);
+        }
+
+        function getLastRecord() {
+            return loadRecords().deaths[0] || null;
+        }
+
+        function getAggregate() {
+            const rec = loadRecords();
+            return {
+                totalDeaths: rec.totalDeaths || 0,
+                bestLevel: rec.bestLevel || 0,
+                bestEscaped: rec.bestEscaped || 0,
+                totalEscaped: rec.totalEscaped || 0,
+            };
+        }
+
+        function getLevelName(num) {
+            const lv = LEVELS[num];
+            return lv ? lv.name : "—";
+        }
+
+        function renderDeathStats() {
+            const last = getLastRecord();
+            const agg = getAggregate();
+            const recEl = document.getElementById("death-record");
+            const statsEl = document.getElementById("death-stats");
+            if (last) {
+                recEl.textContent = `Last run: LEVEL ${last.level} — ${getLevelName(last.level)} · ${last.rooms} rooms · ${last.cause}`;
+            } else {
+                recEl.textContent = "";
+            }
+            statsEl.textContent = `Lifetime · deaths: ${agg.totalDeaths} · best level: ${agg.bestLevel} · total escaped: ${agg.totalEscaped}`;
+        }
+
+        function forgetRecords() {
+            try { localStorage.removeItem(RECORDS_KEY); } catch (e) {}
+            document.getElementById("death-record").textContent = "";
+            document.getElementById("death-stats").textContent = "Records forgotten.";
         }
 
         function addItem() {
@@ -1216,7 +1304,17 @@
                 <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
             `;
             updateUI();
-            narrative("You wake up somewhere you shouldn't be. Yellow light flickers above. The air smells wrong. You need to find a way out.\n\nExplore carefully. Find items. Avoid entities. Survive.");
+            // Opening narrative: include last death record + lifetime stats
+            const last = getLastRecord();
+            const agg = getAggregate();
+            let opening = "You wake up somewhere you shouldn't be. Yellow light flickers above. The air smells wrong. You need to find a way out.\n\nExplore carefully. Find items. Avoid entities. Survive.";
+            if (last) {
+                const death = agg.totalDeaths === 1 ? "death" : "deaths";
+                opening = `(Last run: LEVEL ${last.level} — ${getLevelName(last.level)} · ${last.rooms} rooms · ${last.cause})\n(Lifetime: ${agg.totalDeaths} ${death} · best level ${agg.bestLevel} · ${agg.totalEscaped} escaped)\n\n` + opening;
+            } else if (agg.totalDeaths > 0) {
+                opening = `(Lifetime: ${agg.totalDeaths} death${agg.totalDeaths === 1 ? "" : "s"} · best level ${agg.bestLevel} · ${agg.totalEscaped} escaped)\n\n` + opening;
+            }
+            narrative(opening);
         }
 
         startGame();
