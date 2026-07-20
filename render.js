@@ -125,10 +125,8 @@ function generateRoomDesc() {
     const sizes = ["small", "cramped", "vast", "narrow", "seemingly infinite"];
     const types = ["room", "hallway", "corridor", "space", "chamber"];
     const details = [
-        "The fluorescent lights buzz overhead.", "Yellow wallpaper peels from the walls.",
-        "The air is thick and stale.", "Something drips in the distance.",
-        "You hear something moving.", "The walls feel wrong. Too close.",
-        "Muffled sounds echo from somewhere.", "The floor is wet.",
+        "slow.pool.0.0", "slow.pool.0.1", "slow.pool.0.2", "slow.pool.0.3",
+        "slow.pool.1.0", "slow.pool.1.1", "slow.pool.1.2", "slow.pool.1.3",
     ];
     const echoKeys = [
         "slow.pool.2.0", "slow.pool.2.1", "slow.pool.2.2", "slow.pool.2.3",
@@ -139,9 +137,9 @@ function generateRoomDesc() {
         ? state.visitedRoomSignatures.filter(s => s === sig).length
         : 0;
     if (seenCount >= 2 && Math.random() < 0.30) {
-        return `You are in a ${pick(sizes)} ${pick(types)}. ${t(pick(echoKeys))}`;
+        return `You are in a ${pick(sizes)} ${pick(types)}. ${t(pick(details))}`;
     }
-    return `You are in a ${pick(sizes)} ${pick(types)}. ${pick(details)}`;
+    return `You are in a ${pick(sizes)} ${pick(types)}. ${t(pick(details))}`;
 }
 
 // ---- UI refresh ----
@@ -174,9 +172,13 @@ function applyStaticLabels() {
         "escaped-label": "ui.escaped",
         "inventory-h": "ui.inventory",
         "knowledge-h": "ui.knowledge",
+        "knowledge-header": "ui.knowledge",
         "death-title": "death.title",
         "restart-btn": "btn.tryAgain",
         "forget-btn": "btn.forgetEverything",
+        "game-title": "ui.title",
+        "game-subtitle": "ui.subtitle",
+        "back-link-text": "ui.backToMain",
     };
     for (const id in map) {
         const el = document.getElementById(id);

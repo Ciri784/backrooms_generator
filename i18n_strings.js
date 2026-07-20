@@ -16,6 +16,7 @@ I18N.en = {
     "ui.slotsHint": "{0} SLOTS · CLICK TO USE",
     "ui.noKnowledge": "No observations yet.",
     "ui.observingTag": " (observing...)",
+    "ui.backToMain": "[ BACK TO MAIN ]",
 
     // ---- Buttons ----
     "btn.move": "MOVE",
@@ -158,6 +159,7 @@ I18N.zhTW = {
     "ui.slotsHint": "{0} 格 · 點擊使用",
     "ui.noKnowledge": "還沒有觀察紀錄。",
     "ui.observingTag": "（觀察中...）",
+    "ui.backToMain": "[ 回到首頁 ]",
 
     "btn.move": "前進",
     "btn.search": "搜索",
