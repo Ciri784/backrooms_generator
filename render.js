@@ -6,10 +6,59 @@
 // The text panel is the game's primary surface. Every game state change
 // pushes through here, so the side effects (room counting, last-words
 // capture) live next to the rendering they support.
-function narrative(text, cls = "") {
+//
+// Rendering modes:
+//   - normal: full text shown immediately (default for short beats)
+//   - slow: typewriter-style, char-by-char at 18-32ms jitter (used
+//           for room entries, entity warnings, death narrative —
+//           makes the architecture feel slow and patient)
+//   - glitch: like slow, but each character has a 12% chance of being
+//           replaced by a corrupted glyph (▒ ▓ █ ░ ╳ ▘ ▝ ▗ ▖) for
+//           the duration of that beat
+// Choice between modes is deterministic per call (caller picks via
+// the `mode` arg) so transition sequences can stay unified.
+const GLITCH_GLYPHS = ["▒","▓","█","░","╳","▘","▝","▗","▖","▚","▞","■","◘","◙","◦","●","◊","○"];
+function _narrativeTypewriter(el, text, perCharMs, glitch) {
+    el.textContent = "";
+    let i = 0;
+    const tick = () => {
+        if (i >= text.length) return;
+        const ch = text[i];
+        if (glitch && Math.random() < 0.12) {
+            el.textContent = el.textContent + GLITCH_GLYPHS[Math.floor(Math.random() * GLITCH_GLYPHS.length)];
+            // The corrupted glyph lingers for 1-2 extra ticks before
+            // being overwritten by the real char — gives it a flicker
+            // feel without using a separate "settle" pass.
+        } else {
+            el.textContent = el.textContent + ch;
+        }
+        i++;
+        const jitter = perCharMs + (Math.random() * 14 - 7);
+        setTimeout(tick, Math.max(8, jitter));
+    };
+    setTimeout(tick, perCharMs);
+}
+
+function narrative(text, cls = "", mode) {
     const el = document.getElementById("narrative");
-    el.textContent = text;
     el.className = cls || "";
+    // Pick rendering mode: explicit > entity/boss default slow >
+    // transition slow > default fast.
+    if (!mode) {
+        if (cls === "entity" || cls === "boss" || cls === "death") mode = "slow";
+        else if (state.inTransition) mode = "slow";
+        else if (cls === "item" || cls === "room-still" || cls === "event") mode = "slow";
+        else mode = "instant";
+    }
+    // Low stability: inject glitch into slow beats.
+    const allowGlitch = (state.stability <= 40) ||
+                        (state.stability <= 60 && Math.random() < 0.4) ||
+                        (cls === "death");
+    if (mode === "slow") {
+        _narrativeTypewriter(el, text, 22, allowGlitch);
+    } else {
+        el.textContent = text;
+    }
     // Side effects: every narrative beat in a non-transition state
     // counts as the player being present in this room on this level.
     // Skipped during transition so the level-down sequence doesn't
