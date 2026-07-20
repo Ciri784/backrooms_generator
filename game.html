@@ -502,6 +502,103 @@
 
         // Track which bosses have been defeated this run (managed inside initState)
 
+        // ---- Environmental events ----
+        // Triggers when the player moves into a new room. Not entities —
+        // these are the architecture itself becoming hostile. Always offer
+        // 2-3 actions with one safe choice; failing costs Stability but
+        // doesn't end the run. Success gives a small reward.
+        const ENV_EVENTS = [
+            {
+                id: "walls_closing",
+                intro: "The walls are breathing. They are exhaling — and the room is getting smaller.",
+                safe: "HOLD STILL",
+                options: ["RUN", "HIDE", "HOLD STILL"],
+                wrong: "The walls brush your shoulders. The room shrinks another inch.",
+                success: "You freeze. The walls exhale once more and stop. They remember you, for now.",
+                damage: 25,
+                reward: null,
+            },
+            {
+                id: "thick_air",
+                intro: "The air thickens. Each breath costs you something. Your vision blurs at the edges.",
+                safe: "HOLD STILL",
+                options: ["RUN", "HIDE", "HOLD STILL"],
+                wrong: "You gasp for air. Each breath is heavier than the last. Something is feeding.",
+                success: "You stop breathing. The air around you settles. It loses interest.",
+                damage: 20,
+                reward: "almond",
+            },
+            {
+                id: "cracking_floor",
+                intro: "The floor is cracking under your feet. Hairline fractures spreading outward.",
+                safe: "RUN",
+                options: ["RUN", "HIDE", "HOLD STILL"],
+                wrong: "A piece of floor gives way beneath you. You catch yourself — but the fall cost you.",
+                success: "You run. The floor collapses behind you, one step at a time. You are faster than the building.",
+                damage: 30,
+                reward: null,
+            },
+            {
+                id: "low_hum",
+                intro: "The hum drops. A frequency that should not be audible settles in your molars.",
+                safe: "CLOSE EYES",
+                options: ["HOLD STILL", "HIDE", "CLOSE EYES"],
+                wrong: "The hum finds a crack in your attention. It crawls in.",
+                success: "You close your eyes. The hum passes around you like a current around a stone.",
+                damage: 15,
+                reward: "bandage",
+            },
+            {
+                id: "moving_lights",
+                intro: "The fluorescent lights above you are moving. Slowly. Toward you.",
+                safe: "HIDE",
+                options: ["RUN", "HIDE", "HOLD STILL"],
+                wrong: "A light passes over you. Your skin prickles. Something has seen you.",
+                success: "You duck under a desk. The light passes overhead, searching. It moves on.",
+                damage: 20,
+                reward: "flashlight",
+            },
+            {
+                id: "wrong_door",
+                intro: "A door you have not seen before. It is open. Beyond it: a room you recognise. Yours. From before.",
+                safe: "HOLD STILL",
+                options: ["RUN", "HIDE", "HOLD STILL"],
+                wrong: "You step through. The room behind you is the same. You have lost a layer of yourself.",
+                success: "You do not move. The door slowly, patiently, closes.",
+                damage: 35,
+                reward: null,
+            },
+            {
+                id: "wet_carpet",
+                intro: "The carpet is wet. Not water-wet. The wetness is moving.",
+                safe: "RUN",
+                options: ["RUN", "HIDE", "HOLD STILL"],
+                wrong: "It touches your ankle. The wetness climbs. You shake it off, but something stays.",
+                success: "You step back. The wetness flows past, looking for something slower.",
+                damage: 18,
+                reward: "painkiller",
+            },
+            {
+                id: "echoing_voice",
+                intro: "Someone is calling your name. From the next room. They sound like you.",
+                safe: "HIDE",
+                options: ["RUN", "HIDE", "HOLD STILL"],
+                wrong: "You answer. The voice answers back. Closer. It knew you would.",
+                success: "You do not answer. The voice loses patience. It stops calling.",
+                damage: 22,
+                reward: "gauss",
+            },
+        ];
+
+        // Map reward id to actual ITEMS entry
+        const REWARD_ITEM_IDS = {
+            "almond": "almond",
+            "bandage": "bandage",
+            "flashlight": "flashlight",
+            "painkiller": "painkiller",
+            "gauss": "gauss",
+        };
+
         const ENTITY_TEMPLATES = {
             "Wretches": { desc: "Crawling things. They used to be human. They skitter in the dark.", action: "RUN", escapeChance: 0.6, damage: 20 },
             "Faceless": { desc: "No face. Just smooth skin where features should be. It's looking for something.", action: "HIDE", escapeChance: 0.4, damage: 15 },
@@ -537,6 +634,7 @@
                 inventory: [], hasFlashlight: false, damageReduction: 0,
                 currentEntity: null, inEncounter: false, inTransition: false,
                 currentBoss: null, inBossEncounter: false,
+                currentEnvEvent: null,
                 bossesDefeated: Array(LEVELS.length).fill(false),
             };
         }
@@ -680,6 +778,13 @@
 
             if (chance(0.15 + state.level * 0.05)) {
                 setTimeout(spawnEntity, 400);
+            }
+
+            // Environmental events: the architecture itself becoming hostile.
+            // Independent of entity spawns but shares the inEncounter lock,
+            // so only one can fire at a time.
+            if (chance(0.10 + state.level * 0.02)) {
+                setTimeout(spawnEnvironmentEvent, 500);
             }
         }
 
@@ -829,6 +934,63 @@
                 actions[3].textContent = 'OBSERVE';
                 actions[3].onclick = () => entityEncounter('OBSERVE');
             }
+        }
+
+        // ---- Environmental events ----
+        // Architecture itself becoming hostile. Triggered separately from
+        // entity encounters when moving into a new room. Shares the
+        // `inEncounter` lock to prevent stacking with regular entity fights
+        // or boss encounters. Failure damages Stability but never
+        // instant-kills; success may drop a useful item.
+        function spawnEnvironmentEvent() {
+            if (state.inEncounter || state.inTransition || state.inBossEncounter) return;
+            const ev = pick(ENV_EVENTS);
+            state.currentEnvEvent = ev;
+            state.inEncounter = true;
+
+            const label = ev.id.replace(/_/g, " ");
+            narrative(`⚠ ENVIRONMENT — ${label.toUpperCase()} ⚠\n\n${ev.intro}`, "event");
+
+            const buttons = ev.options.map(opt =>
+                `<button class="action-btn" onclick="environmentEvent('${opt}')">${opt}</button>`
+            ).join("");
+            document.getElementById("actions").innerHTML = buttons;
+        }
+
+        function environmentEvent(action) {
+            if (!state.inEncounter) return;
+            const ev = state.currentEnvEvent;
+            if (!ev) return;
+
+            if (action === ev.safe) {
+                state.escaped++;
+                let msg = `You ${action.toLowerCase()}.\n\n${ev.success}`;
+                if (ev.reward && state.inventory.length < MAX_INVENTORY) {
+                    const item = ITEMS.find(i => i.id === ev.reward);
+                    if (item) {
+                        state.inventory.push(item);
+                        msg += `\n\nYou find: ${item.name} (${item.desc})`;
+                    }
+                }
+                narrative(msg, "item");
+            } else {
+                const damage = ev.damage;
+                narrative(`You ${action.toLowerCase()}.\n\n${ev.wrong}\n\n-${damage}% Stability`, "event");
+                state.stability = clamp(state.stability - damage, 0, 100);
+            }
+
+            state.currentEnvEvent = null;
+            state.inEncounter = false;
+
+            document.getElementById("actions").innerHTML = `
+                <button class="action-btn" onclick="moveOn()">MOVE</button>
+                <button class="action-btn" onclick="search()">SEARCH</button>
+                <button class="action-btn" onclick="hide()">HIDE</button>
+                <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
+            `;
+
+            updateUI();
+            checkGameOver();
         }
 
         function spawnEntityForEncounter(entityName) {
