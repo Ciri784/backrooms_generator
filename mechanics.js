@@ -16,18 +16,18 @@ function useItem(slotIndex) {
     switch (item.effect) {
         case "stability_restore":
             state.stability = clamp(state.stability + item.value, 0, 100);
-            narrative(`You use ${item.name}.\n\n${item.desc}\n\nStability restored.`, "item");
+            nt("item.useBandage", [t("item." + item.id + ".name"), t("item." + item.id + ".bandageDesc")], "item");
             break;
         case "damage_reduction":
             state.damageReduction = item.value;
-            narrative(`You use ${item.name}.\n\nStability loss reduced by ${item.value}% for next encounter.`, "item");
+            nt("item.usePainkillers", [t("item." + item.id + ".name"), item.value], "item");
             break;
         case "escape_bonus":
             state.hasFlashlight = true;
-            narrative(`You equip ${item.name}.\n\nWretches will fear you. Escape chance +25%.`, "item");
+            nt("item.useFlashlight", [t("item." + item.id + ".name")], "item");
             break;
         case "detect":
-            narrative(`You turn on the ${item.name}.\n\nThe needle twitches. Something is nearby.`, "item");
+            nt("item.useGaunt", [t("item." + item.id + ".name")], "item");
             break;
     }
     updateUI();
@@ -36,21 +36,21 @@ function useItem(slotIndex) {
 function checkGameOver() {
     if (state.stability <= 0) {
         const msgs = [
-            "The Backrooms claimed another victim.",
-            "You wandered too far. There is no way back.",
-            "Something caught up to you.",
-            "You should have run when you had the chance.",
+            "death.cause0",
+            "death.cause1",
+            "death.cause2",
+            "death.cause3",
         ];
-        document.getElementById("death-msg").textContent = pick(msgs);
+        document.getElementById("death-msg").textContent = t(pick(msgs));
         const lv = getCurrentLevel();
-        const where = lv ? `in LEVEL ${lv.num} — ${lv.name}` : "somewhere unnamed";
+        const lvName = lv ? t("level." + lv.num + ".name") : t("death.unnamed");
         const cause = state.currentBoss
-            ? `Killed by ${state.currentBoss} ${where}`
+            ? t("death.killedByBoss", state.currentBoss, state.level, lvName)
             : state.currentEnvEvent
-            ? `Consumed by ${state.currentEnvEvent.id.replace(/_/g, " ")} ${where}`
+            ? t("death.consumedByEnv", state.currentEnvEvent.id.replace(/_/g, " "), state.level, lvName)
             : state.currentEntity
-            ? `Taken by ${state.currentEntity} ${where}`
-            : `The architecture collapsed around you ${where}`;
+            ? t("death.takenByEntity", state.currentEntity, state.level, lvName)
+            : t("death.collapsed", state.level, lvName);
         saveDeathRecord({
             level: state.level,
             rooms: state.rooms,
@@ -76,7 +76,7 @@ function moveOn() {
         enterSlowRoom();
         return;
     } else {
-        narrative(`You move forward through the ${getCurrentLevel().name}.\n\n${generateRoomDesc()}`);
+        nt("move.forward", [getCurrentLevel().name, generateRoomDesc()]);
     }
     updateUI();
 
@@ -84,13 +84,9 @@ function moveOn() {
     // surface a fragment of memory in the narrative.
     const echo = checkDeathEcho();
     if (echo) {
-        const echoLines = [
-            `\n\nYou notice a dark stain on the tiles.`,
-            `\n\nThe air here feels familiar. Too familiar.`,
-            `\n\nSomething happened here before. You can't remember what.`,
-        ];
+        const echoKeys = ["echo.0", "echo.1", "echo.2"];
         const el = document.getElementById("narrative");
-        el.textContent = el.textContent + pick(echoLines);
+        el.textContent = el.textContent + t(pick(echoKeys));
     }
     if (chance(0.15 + state.level * 0.05)) {
         setTimeout(spawnEntity, 400);
@@ -148,11 +144,11 @@ function search() {
     state.rooms++;
     const found = addItem();
     if (found) {
-        narrative(`You search the area.\n\nYou find: ${found.name}\n${found.desc}`, "item");
+        nt("search.found", [t("item." + found.id + ".name"), t("item." + found.id + ".desc")], "item");
     } else if (state.inventory.length >= MAX_INVENTORY) {
-        narrative(`You search but your inventory is full.\n\nMaybe you should use some items first.`, "");
+        nt("search.full", [], "");
     } else {
-        narrative(`You search but find nothing useful.\n\nJust dust and the smell of wet carpet.`, "");
+        nt("search.nothing", [], "");
     }
     updateUI();
     if (chance(0.2 + state.level * 0.03)) {
@@ -169,9 +165,9 @@ function hide() {
     state.rooms++;
     updateUI();
     if (chance(0.5)) {
-        narrative(`You find a hiding spot and stay still.\n\nThe sounds fade. You're alone. For now.`, "");
+        nt("hide.safe", [], "");
     } else {
-        narrative(`You hide but hear something getting closer.\n\nIt knows you're here.`, "");
+        nt("hide.danger", [], "");
         if (chance(0.5)) {
             setTimeout(spawnEntity, 500);
         }
@@ -186,9 +182,9 @@ function holdStill() {
     state.rooms++;
     updateUI();
     if (chance(0.5)) {
-        narrative(`You stay completely still.\n\nThe sounds fade. You're alone. For now.`, "");
+        nt("still.safe", [], "");
     } else {
-        narrative(`You freeze. You hear something getting closer.\n\nIt knows you're here.`, "");
+        nt("still.danger", [], "");
         if (chance(0.5)) {
             setTimeout(spawnEntity, 500);
         }
@@ -212,14 +208,10 @@ function spawnEntity() {
         desc = entity.desc + "\n\nIt remembers you. It has been waiting.";
     }
     if (state.doorsIgnoredThisLevel && state.doorsIgnoredThisLevel > 0) {
-        const doorCallbacks = [
-            "A door is still behind you. You can feel it. It wants you to know that.",
-            "Behind you, somewhere, a door you ignored creaks on its hinges.",
-            "You walked past a door. The thing in front of you knows.",
-        ];
-        desc += "\n\n" + pick(doorCallbacks);
+        const doorCallbackKeys = ["door.callback0", "door.callback1", "door.callback2"];
+        desc += "\n\n" + t(pick(doorCallbackKeys));
     }
-    narrative(`WARNING: ${entityName.toUpperCase()}\n\n${desc}\n\nRecommended: ${entity.action}`, "entity");
+    nt("encounter.warning", [entityName.toUpperCase(), desc, entity.action], "entity");
     document.getElementById("actions").innerHTML = `
         <button class="action-btn" onclick="entityEncounter('RUN')">RUN</button>
         <button class="action-btn" onclick="entityEncounter('HIDE')">HIDE</button>
@@ -258,7 +250,7 @@ function spawnEnvironmentEvent() {
     state.currentEnvEvent = ev;
     state.inEncounter = true;
     const label = ev.id.replace(/_/g, " ");
-    narrative(`⚠ ENVIRONMENT — ${label.toUpperCase()} ⚠\n\n${ev.intro}`, "event");
+    nt("env.event", [label.toUpperCase(), ev.intro], "event");
     const buttons = ev.options.map(opt =>
         `<button class="action-btn" onclick="environmentEvent('${opt}')">${opt}</button>`
     ).join("");
@@ -271,18 +263,19 @@ function environmentEvent(action) {
     if (!ev) return;
     if (action === ev.safe) {
         state.escaped++;
-        let msg = `You ${action.toLowerCase()}.\n\n${ev.success}`;
         if (ev.reward && state.inventory.length < MAX_INVENTORY) {
             const item = ITEMS.find(i => i.id === ev.reward);
             if (item) {
                 state.inventory.push(item);
-                msg += `\n\nYou find: ${item.name} (${item.desc})`;
+                nt("env.successItem", [action.toLowerCase(), ev.success, t("item." + item.id + ".name"), t("item." + item.id + ".desc")], "item");
+            } else {
+                nt("env.success", [action.toLowerCase(), ev.success], "item");
             }
+        } else {
+            nt("env.success", [action.toLowerCase(), ev.success], "item");
         }
-        narrative(msg, "item");
     } else {
-        const damage = ev.damage;
-        narrative(`You ${action.toLowerCase()}.\n\n${ev.wrong}\n\n-${damage}% Stability`, "event");
+        nt("env.fail", [action.toLowerCase(), ev.wrong, damage], "event");
         state.stability = clamp(state.stability - damage, 0, 100);
     }
     state.currentEnvEvent = null;
@@ -308,10 +301,7 @@ function spawnBossEncounter() {
     }
     state.inBossEncounter = true;
     state.currentBoss = bossName;
-    narrative(
-        `⚠ BOSS — ${bossName.toUpperCase()} ⚠\n\n${boss.intro}\n\n${boss.desc}\n\nRecommended: ${boss.action}`,
-        "entity"
-    );
+    nt("boss.warning", [bossName.toUpperCase(), boss.intro, boss.desc, boss.action], "entity");
     document.getElementById("actions").innerHTML = `
         <button class="action-btn" onclick="bossEncounter('RUN')">RUN</button>
         <button class="action-btn" onclick="bossEncounter('HIDE')">HIDE</button>
@@ -334,17 +324,11 @@ function bossEncounter(action) {
     const boss = BOSS_TEMPLATES[bossName];
     let escapeChance = boss.escapeChance;
     if (action === 'OBSERVE') {
-        narrative(
-            `You study the ${bossName}.\n\nThe recommended action is: ${boss.action}\n\nYou have one chance. Make it count.`,
-            ""
-        );
+        nt("boss.observe", [bossName, boss.action], "");
         state.observedBoss = bossName;
         setTimeout(() => {
             if (state.stability <= 0) return;
-            narrative(
-                `The ${bossName} is waiting.\n\nYou remember: ${boss.action}.\n\nWhat will you do?`,
-                "entity"
-            );
+            nt("boss.observeStill", [bossName, boss.action], "entity");
         }, 1500);
         return;
     }
@@ -353,28 +337,21 @@ function bossEncounter(action) {
     if (chance(escapeChance)) {
         state.escaped++;
         state.bossesDefeated[state.level] = true;
-        narrative(
-            `You ${action}.\n\nThe ${bossName} recoils. It dissolves into the architecture around you.\n\nYou survived. For now.`,
-            ""
-        );
+        nt("boss.escape", [action, bossName], "");
         state.inBossEncounter = false;
         state.currentBoss = null;
         state.observedBoss = null;
         setActionButtonsEnabled(true);
         enableInventory();
         document.getElementById("actions").innerHTML = `
-            <button class="action-btn" onclick="moveOn()">MOVE</button>
-            <button class="action-btn" onclick="search()">SEARCH</button>
-            <button class="action-btn" onclick="hide()">HIDE</button>
-            <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
+            <button class="action-btn" onclick="moveOn()">${t("btn.move")}</button>
+            <button class="action-btn" onclick="search()">${t("btn.search")}</button>
+            <button class="action-btn" onclick="hide()">${t("btn.hide")}</button>
+            <button class="action-btn" onclick="holdStill()">${t("btn.holdStill")}</button>
         `;
         updateUI();
     } else {
-        const damage = boss.damage;
-        narrative(
-            `You ${action}.\n\nThe ${bossName} overwhelms you.\n\n-${damage}% Stability`,
-            "entity"
-        );
+        nt("boss.fail", [action, bossName, damage], "entity");
         state.stability = clamp(state.stability - damage, 0, 100);
         state.observedBoss = null;
         updateUI();
@@ -396,13 +373,13 @@ function entityEncounter(action) {
     if (repeat >= 3) escapeChance -= 0.10;
     else if (repeat === 2) escapeChance -= 0.05;
     if (action === 'OBSERVE') {
-        narrative(`You keep your eyes on the ${entityName}.\n\nYou study its movements, its patterns.\n\nThis knowledge may help you survive the next encounter.`, "");
+        nt("entity.observe", [entityName], "");
         state.observedEntity = entityName;
         state.inEncounter = false;
         setTimeout(() => {
             if (state.inTransition || state.stability <= 0) return;
             if (state.stability > 0) {
-                narrative(`The ${entityName} is still here.\n\nWhat will you do?`, "entity");
+                nt("entity.observeStill", [entityName], "entity");
                 state.inEncounter = true;
                 spawnEntityForEncounter(entityName);
             }
@@ -423,7 +400,7 @@ function entityEncounter(action) {
         if (state.observedEntity === entityName) {
             ENTITY_OBSERVE_KNOWLEDGE[entityName] = 0.15;
         }
-        narrative(`You ${action}.\n\nIt works. The ${entityName} loses interest and fades into the shadows.\n\nYou escaped.`, "");
+        nt("entity.escape", [action, entityName], "");
         state.hasFlashlight = false;
         state.damageReduction = 0;
         state.observedEntity = null;
@@ -432,9 +409,9 @@ function entityEncounter(action) {
         if (state.damageReduction > 0) damage = Math.max(5, damage - state.damageReduction);
         if (state.observedEntity === entityName) {
             damage = Math.min(50, damage + 10);
-            narrative(`You ${action}.\n\nThe ${entityName} catches you.\n\nYour observation made you hesitate. -\n${damage}% Stability`, "entity");
+            nt("entity.failObserved", [action, entityName, damage], "entity");
         } else {
-            narrative(`You ${action}.\n\nThe ${entityName} catches you.\n\n-${damage}% Stability`, "entity");
+            nt("entity.fail", [action, entityName, damage], "entity");
         }
         state.stability = clamp(state.stability - damage, 0, 100);
         state.hasFlashlight = false;
@@ -444,10 +421,10 @@ function entityEncounter(action) {
     state.currentEntity = null;
     state.inEncounter = false;
     document.getElementById("actions").innerHTML = `
-        <button class="action-btn" onclick="moveOn()">MOVE</button>
-        <button class="action-btn" onclick="search()">SEARCH</button>
-        <button class="action-btn" onclick="hide()">HIDE</button>
-        <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
+        <button class="action-btn" onclick="moveOn()">${t("btn.move")}</button>
+        <button class="action-btn" onclick="search()">${t("btn.search")}</button>
+        <button class="action-btn" onclick="hide()">${t("btn.hide")}</button>
+        <button class="action-btn" onclick="holdStill()">${t("btn.holdStill")}</button>
     `;
     updateUI();
     checkGameOver();
@@ -464,17 +441,11 @@ function spawnDoorChoice() {
     if (state.inEncounter || state.inTransition || state.inBossEncounter) return;
     state.inEncounter = true;
     state.pendingDoor = true;
-    const doorDesc = pick([
-        "A door stands in the middle of the room. It wasn't here before.",
-        "The wall is open. A passage leads to somewhere else.",
-        "There's a door painted on the wall. It is not painted.",
-        "An elevator. The buttons are all the same number.",
-        "A heavy door, slightly ajar. The light beyond is wrong.",
-    ]);
-    narrative(doorDesc, "event");
+    const doorDescKeys = ["door.appear0", "door.appear1", "door.appear2", "door.appear3", "door.appear4"];
+    narrative(t(pick(doorDescKeys)), "event");
     document.getElementById("actions").innerHTML = `
-        <button class="action-btn" onclick="openDoor()">OPEN</button>
-        <button class="action-btn" onclick="ignoreDoor()">IGNORE</button>
+        <button class="action-btn" onclick="openDoor()">${t("btn.open")}</button>
+        <button class="action-btn" onclick="ignoreDoor()">${t("btn.ignore")}</button>
     `;
 }
 
@@ -482,20 +453,18 @@ function openDoor() {
     if (!state.pendingDoor) return;
     state.pendingDoor = false;
     state.stability = clamp(state.stability + 10, 0, 100);
-    // Scramble the room counter so Echo Room can't fire on the
-    // current level for the rest of the run.
     if (state.visitedRoomSignatures) {
         state.visitedRoomSignatures = state.visitedRoomSignatures.filter(
             s => !s.startsWith(state.level + ":")
         );
     }
-    narrative(`You open the door. The air on the other side is different. The architecture is different.\n\nStability +10%.`, "item");
+    nt("door.open", [], "item");
     state.inEncounter = false;
     document.getElementById("actions").innerHTML = `
-        <button class="action-btn" onclick="moveOn()">MOVE</button>
-        <button class="action-btn" onclick="search()">SEARCH</button>
-        <button class="action-btn" onclick="hide()">HIDE</button>
-        <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
+        <button class="action-btn" onclick="moveOn()">${t("btn.move")}</button>
+        <button class="action-btn" onclick="search()">${t("btn.search")}</button>
+        <button class="action-btn" onclick="hide()">${t("btn.hide")}</button>
+        <button class="action-btn" onclick="holdStill()">${t("btn.holdStill")}</button>
     `;
     updateUI();
     if (chance(0.4)) {
@@ -512,13 +481,13 @@ function ignoreDoor() {
             s => !s.startsWith(state.level + ":")
         );
     }
-    narrative(`You walk past the door. It is still there. You can feel it behind you.`, "event");
+    nt("door.ignore", [], "event");
     state.inEncounter = false;
     document.getElementById("actions").innerHTML = `
-        <button class="action-btn" onclick="moveOn()">MOVE</button>
-        <button class="action-btn" onclick="search()">SEARCH</button>
-        <button class="action-btn" onclick="hide()">HIDE</button>
-        <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
+        <button class="action-btn" onclick="moveOn()">${t("btn.move")}</button>
+        <button class="action-btn" onclick="search()">${t("btn.search")}</button>
+        <button class="action-btn" onclick="hide()">${t("btn.hide")}</button>
+        <button class="action-btn" onclick="holdStill()">${t("btn.holdStill")}</button>
     `;
     updateUI();
 }
@@ -536,19 +505,21 @@ function startGame() {
     updateUI();
     const last = getLastRecord();
     const agg = getAggregate();
-    let opening = "You wake up somewhere you shouldn't be. Yellow light flickers above. The air smells wrong. You need to find a way out.\n\nExplore carefully. Find items. Avoid entities. Survive.";
+    let opening = t("intro.wake") + "\n\nExplore carefully. Find items. Avoid entities. Survive.";
     let prefix = "";
     if (last) {
-        const death = agg.totalDeaths === 1 ? "death" : "deaths";
-        prefix += `(Last run: LEVEL ${last.level} — ${getLevelName(last.level)} · ${last.rooms} rooms · ${last.cause})\n`;
-        if (last.lastWords) prefix += `(Last words: "${last.lastWords}")\n`;
-        prefix += `(Lifetime: ${agg.totalDeaths} ${death} · best level ${agg.bestLevel} · ${agg.totalEscaped} escaped)\n\n`;
+        const lvName = getLevelName ? t("level." + last.level + ".name") : ("LEVEL " + last.level);
+        prefix += t("death.lastPrefix", last.level, lvName, last.rooms, last.cause);
+        if (last.lastWords) prefix += t("death.lastWordsPrefix", last.lastWords);
+        const deathWord = agg.totalDeaths === 1 ? "death" : "deaths";
+        prefix += t("death.lifetimePrefix", agg.totalDeaths, deathWord, agg.bestLevel, agg.totalEscaped);
     } else if (agg.totalDeaths > 0) {
-        prefix += `(Lifetime: ${agg.totalDeaths} death${agg.totalDeaths === 1 ? "" : "s"} · best level ${agg.bestLevel} · ${agg.totalEscaped} escaped)\n\n`;
+        const deathWord = agg.totalDeaths === 1 ? "death" : "deaths";
+        prefix += t("death.lifetimePrefix", agg.totalDeaths, deathWord, agg.bestLevel, agg.totalEscaped);
     }
     if (last && last.roomsPerLevel && last.roomsPerLevel[0] >= 5) {
         const startLv = last.roomsPerLevel[0];
-        prefix += `(You remember LEVEL 0 — ${getLevelName(0)}. ${startLv} rooms. The hum was the same.)\n\n`;
+        prefix += t("death.memoryFragment", t("level.0.name"), startLv) + "\n\n";
     }
     narrative(prefix + opening);
 }

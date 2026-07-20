@@ -75,19 +75,11 @@ function narrative(text, cls = "", mode) {
     // the contradiction doesn't bleed into scripted beats.
     if (text && !state.inTransition && !state.inEncounter &&
         !state.inBossEncounter && state.stability > 70 && Math.random() < 0.05) {
-        const faults = [
-            "\n\nYou turn left. There is no left.",
-            "\n\nThe corridor stretches on. It was straight a moment ago.",
-            "\n\nYou count four exits. You only remember three.",
-            "\n\nYour footsteps echo twice. You are alone.",
-            "\n\nThe wallpaper pattern repeats one row too many.",
-            "\n\nYou hear your own breathing from the next room.",
-            "\n\nThe light flickers. For a moment, you see the room from above.",
-            "\n\nYou smell rain. There are no windows here.",
-            "\n\nYour shadow points a different direction than you do.",
-            "\n\nThe hum in the walls spells something. You wish it didn't.",
+        const faultKeys = [
+            "fault.0", "fault.1", "fault.2", "fault.3", "fault.4",
+            "fault.5", "fault.6", "fault.7", "fault.8", "fault.9",
         ];
-        el.textContent = el.textContent + pick(faults);
+        el.textContent = el.textContent + t(pick(faultKeys));
     }
     // Keep the last 280 chars of the most recent narrative so we
     // can show it as "last words" on the death screen.
@@ -138,20 +130,16 @@ function generateRoomDesc() {
         "You hear something moving.", "The walls feel wrong. Too close.",
         "Muffled sounds echo from somewhere.", "The floor is wet.",
     ];
-    const echoDetails = [
-        "Wait — wasn't the wallpaper peeling on the other side?",
-        "There's a chair here. There wasn't a chair here before.",
-        "A line of tape on the floor, in a different place than before.",
-        "The light fixture is angled slightly differently. You're sure of it.",
-        "There's a scuff mark on the wall you don't remember making.",
-        "The pattern of stains on the carpet is rearranged.",
+    const echoKeys = [
+        "slow.pool.2.0", "slow.pool.2.1", "slow.pool.2.2", "slow.pool.2.3",
+        "slow.pool.3.0", "slow.pool.3.1",
     ];
     const sig = state.level + ":" + state.roomsPerLevel[state.level];
     const seenCount = state.visitedRoomSignatures
         ? state.visitedRoomSignatures.filter(s => s === sig).length
         : 0;
     if (seenCount >= 2 && Math.random() < 0.30) {
-        return `You are in a ${pick(sizes)} ${pick(types)}. ${pick(echoDetails)}`;
+        return `You are in a ${pick(sizes)} ${pick(types)}. ${t(pick(echoKeys))}`;
     }
     return `You are in a ${pick(sizes)} ${pick(types)}. ${pick(details)}`;
 }
@@ -166,11 +154,38 @@ function updateUI() {
     document.getElementById("escaped").textContent = state.escaped;
 
     const lv = getCurrentLevel();
-    document.getElementById("level-name").textContent = `LEVEL ${lv.num} — ${lv.name}`;
-    document.getElementById("room-desc").textContent = lv.desc;
+    document.getElementById("level-name").textContent = `${t("descend.toLevel", lv.num, t("level." + lv.num + ".name"))}`;
+    document.getElementById("room-desc").textContent = t("level." + lv.num + ".desc");
+
+    // Apply static UI labels to current language.
+    applyStaticLabels();
 
     renderInventory();
     renderKnowledge();
+}
+
+// Re-applies labels in #game.html that don't get refreshed on every
+// updateUI() call. Cheap to call often.
+function applyStaticLabels() {
+    const map = {
+        "stab-label": "ui.stability",
+        "level-label": "ui.level",
+        "rooms-label": "ui.rooms",
+        "escaped-label": "ui.escaped",
+        "inventory-h": "ui.inventory",
+        "knowledge-h": "ui.knowledge",
+        "death-title": "death.title",
+        "restart-btn": "btn.tryAgain",
+        "forget-btn": "btn.forgetEverything",
+    };
+    for (const id in map) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = t(map[id]);
+    }
+    const note = document.getElementById("inventory-note");
+    if (note) note.textContent = t("ui.slotsHint", MAX_INVENTORY);
+    // Re-render action buttons to current language.
+    if (typeof rebuildActionButtons === "function") rebuildActionButtons();
 }
 
 function renderKnowledge() {
@@ -178,14 +193,14 @@ function renderKnowledge() {
     const known = Object.keys(ENTITY_OBSERVE_KNOWLEDGE);
     const pending = state.observedEntity;
     if (known.length === 0 && !pending) {
-        knowledgeDiv.innerHTML = "No observations yet.";
+        knowledgeDiv.innerHTML = t("ui.noKnowledge");
     } else {
         let html = "";
         known.forEach(name => {
             html += `<span class="known-entity">${name}</span> (+${Math.round(ENTITY_OBSERVE_KNOWLEDGE[name] * 100)}%)<br>`;
         });
         if (pending) {
-            html += `<span class="pending-entity">${pending}</span> (observing...)<br>`;
+            html += `<span class="pending-entity">${pending}</span>${t("ui.observingTag")}<br>`;
         }
         knowledgeDiv.innerHTML = html;
     }
@@ -197,7 +212,7 @@ function renderInventory() {
         const item = state.inventory[i];
         if (item) {
             slot.className = `inv-slot ${item.cssClass || ''}`;
-            slot.innerHTML = `<span class="item-name">${item.name}</span><span class="item-desc">${item.desc}</span>`;
+            slot.innerHTML = `<span class="item-name">${t("item." + item.id + ".name")}</span><span class="item-desc">${t("item." + item.id + ".desc")}</span>`;
             slot.onclick = () => useItem(i);
         } else {
             slot.className = 'inv-slot empty';
@@ -214,9 +229,10 @@ function renderDeathStats() {
     const statsEl = document.getElementById("death-stats");
     const wordsEl = document.getElementById("death-lastwords");
     if (last) {
-        recEl.textContent = `Last run: LEVEL ${last.level} — ${getLevelName(last.level)} · ${last.rooms} rooms · ${last.cause}`;
+        const lvName = (typeof getLevelName === "function") ? t("level." + last.level + ".name") : "";
+        recEl.textContent = t("death.lastRun", last.level, lvName, last.rooms, last.cause);
         if (last.lastWords) {
-            wordsEl.textContent = `Last words: "${last.lastWords}"`;
+            wordsEl.textContent = t("death.lastWords", last.lastWords);
         } else {
             wordsEl.textContent = "";
         }
@@ -224,13 +240,14 @@ function renderDeathStats() {
         recEl.textContent = "";
         wordsEl.textContent = "";
     }
-    statsEl.textContent = `Lifetime · deaths: ${agg.totalDeaths} · best level: ${agg.bestLevel} · total escaped: ${agg.totalEscaped}`;
+    const key = agg.totalDeaths === 1 ? "death.lifetimeSingular" : "death.lifetimePlural";
+    statsEl.textContent = t(key, agg.totalDeaths, agg.bestLevel, agg.totalEscaped);
 }
 
 function forgetRecords() {
     try { localStorage.removeItem(RECORDS_KEY); } catch (e) {}
     document.getElementById("death-record").textContent = "";
-    document.getElementById("death-stats").textContent = "Records forgotten.";
+    document.getElementById("death-stats").textContent = t("death.recordsForgotten");
 }
 
 // ---- Action button helpers ----
@@ -250,6 +267,41 @@ function enableInventory() {
     renderInventory();
 }
 
+// Rebuilt on language change to swap button labels in-place without
+// losing the current state (encounter / boss / door). Keeps the
+// onclick handlers from the source buttons.
+function rebuildActionButtons() {
+    const map = {
+        moveOn: t("btn.move"),
+        search: t("btn.search"),
+        hide: t("btn.hide"),
+        holdStill: t("btn.holdStill"),
+        openDoor: t("btn.open"),
+        ignoreDoor: t("btn.ignore"),
+    };
+    document.querySelectorAll(".action-btn").forEach(btn => {
+        const onclick = btn.getAttribute("onclick") || "";
+        const m = onclick.match(/^(\w+)\(/);
+        if (m && map[m[1]]) btn.textContent = map[m[1]];
+    });
+}
+
+// Called by setLang() in i18n.js to refresh visible text in-place
+// after the user switches language. State is preserved.
+function applyLanguage() {
+    rebuildActionButtons();
+    if (typeof renderInventory === "function") renderInventory();
+    if (typeof renderKnowledge === "function") renderKnowledge();
+    if (typeof updateUI === "function") updateUI();
+    // Refresh death screen text if it's visible.
+    if (document.getElementById("game-over").classList.contains("show")) {
+        if (typeof renderDeathStats === "function") renderDeathStats();
+    }
+    // Refresh language toggle button text.
+    const langBtn = document.getElementById("lang-toggle");
+    if (langBtn) langBtn.textContent = langLabel(getLang() === "en" ? "zhTW" : "en");
+}
+
 if (typeof window !== "undefined") {
     window.narrative = narrative;
     window.pickSlowRoom = pickSlowRoom;
@@ -263,4 +315,6 @@ if (typeof window !== "undefined") {
     window.setActionButtonsEnabled = setActionButtonsEnabled;
     window.disableInventory = disableInventory;
     window.enableInventory = enableInventory;
+    window.rebuildActionButtons = rebuildActionButtons;
+    window.applyLanguage = applyLanguage;
 }

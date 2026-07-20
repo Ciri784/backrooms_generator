@@ -383,25 +383,25 @@
 
         <div id="stats">
             <div class="stat">
-                <div class="stat-label">STABILITY</div>
+                <div class="stat-label" id="stab-label">STABILITY</div>
                 <div class="stat-value" id="stability">100%</div>
             </div>
             <div class="stat">
-                <div class="stat-label">LEVEL</div>
+                <div class="stat-label" id="level-label">LEVEL</div>
                 <div class="stat-value" id="level">0</div>
             </div>
             <div class="stat">
-                <div class="stat-label">ROOMS</div>
+                <div class="stat-label" id="rooms-label">ROOMS</div>
                 <div class="stat-value" id="rooms">0</div>
             </div>
             <div class="stat">
-                <div class="stat-label">ESCAPED</div>
+                <div class="stat-label" id="escaped-label">ESCAPED</div>
                 <div class="stat-value" id="escaped">0</div>
             </div>
         </div>
 
         <div id="knowledge-panel">
-            <div id="knowledge-header">KNOWLEDGE</div>
+            <div id="knowledge-header" class="panel-h">KNOWLEDGE</div>
             <div id="knowledge-list">No observations yet.</div>
         </div>
 
@@ -414,7 +414,7 @@
             <div id="narrative">You wake up somewhere you shouldn't be. Yellow light flickers above. The air smells wrong. You need to find a way out.</div>
 
             <div id="inventory-panel">
-                <h3>INVENTORY</h3>
+                <h3 id="inventory-h">INVENTORY</h3>
                 <div id="inventory-slots">
                     <div class="inv-slot empty" data-slot="0"></div>
                     <div class="inv-slot empty" data-slot="1"></div>
@@ -434,7 +434,7 @@
     </div>
 
     <div id="game-over">
-        <h2>YOU DIED</h2>
+        <h2 id="death-title">YOU DIED</h2>
         <p id="death-msg">The Backrooms claimed another victim.</p>
         <p id="death-record"></p>
         <p id="death-lastwords"></p>
@@ -443,9 +443,23 @@
         <button id="forget-btn" onclick="forgetRecords()">FORGET EVERYTHING</button>
     </div>
 
+    <button id="lang-toggle" onclick="setLang(getLang() === 'en' ? 'zhTW' : 'en')">中文</button>
+
+    <script src="i18n.js"></script>
+    <script src="i18n_strings.js"></script>
+    <script src="i18n_pools.js"></script>
     <script src="data.js"></script>
     <script src="state.js"></script>
     <script src="render.js"></script>
     <script src="mechanics.js"></script>
+    <script>
+        // Initial render: apply language labels to the static DOM
+        // (those that aren't touched by startGame) before the game
+        // begins its first beat.
+        if (typeof applyLanguage === "function") {
+            document.getElementById("lang-toggle").textContent = langLabel(getLang() === "en" ? "zhTW" : "en");
+            applyLanguage();
+        }
+    </script>
 </body>
 </html>
