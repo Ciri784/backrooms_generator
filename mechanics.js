@@ -441,3 +441,22 @@ function startGame() {
 }
 
 startGame();
+
+if (typeof window !== "undefined") {
+    window.addItem = addItem;
+    window.useItem = useItem;
+    window.checkGameOver = checkGameOver;
+    window.moveOn = moveOn;
+    window.search = search;
+    window.hide = hide;
+    window.holdStill = holdStill;
+    window.descendToLevel = descendToLevel;
+    window.spawnEntity = spawnEntity;
+    window.spawnEntityForEncounter = spawnEntityForEncounter;
+    window.entityEncounter = entityEncounter;
+    window.spawnEnvironmentEvent = spawnEnvironmentEvent;
+    window.environmentEvent = environmentEvent;
+    window.spawnBossEncounter = spawnBossEncounter;
+    window.bossEncounter = bossEncounter;
+    window.startGame = startGame;
+}
