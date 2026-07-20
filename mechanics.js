@@ -194,7 +194,16 @@ function spawnEntity() {
     const entityName = pick(lv.entities);
     const entity = ENTITY_TEMPLATES[entityName];
     state.currentEntity = entityName;
-    narrative(`WARNING: ${entityName.toUpperCase()}\n\n${entity.desc}\n\nRecommended: ${entity.action}`, "entity");
+    if (!state.entityEncounterCount) state.entityEncounterCount = {};
+    state.entityEncounterCount[entityName] = (state.entityEncounterCount[entityName] || 0) + 1;
+    const repeatCount = state.entityEncounterCount[entityName];
+    let desc = entity.desc;
+    if (repeatCount === 2) {
+        desc = entity.desc + "\n\nIts eyes know you better now.";
+    } else if (repeatCount >= 3) {
+        desc = entity.desc + "\n\nIt remembers you. It has been waiting.";
+    }
+    narrative(`WARNING: ${entityName.toUpperCase()}\n\n${desc}\n\nRecommended: ${entity.action}`, "entity");
     document.getElementById("actions").innerHTML = `
         <button class="action-btn" onclick="entityEncounter('RUN')">RUN</button>
         <button class="action-btn" onclick="entityEncounter('HIDE')">HIDE</button>
@@ -365,6 +374,11 @@ function entityEncounter(action) {
     const entityName = state.currentEntity;
     const entity = ENTITY_TEMPLATES[entityName];
     let escapeChance = entity.escapeChance;
+    // Entity Memory: same entity hit twice+ this run learns your patterns.
+    // 2nd encounter -0.05, 3rd+ -0.10. Capped so it stays escapable.
+    const repeat = (state.entityEncounterCount && state.entityEncounterCount[entityName]) || 0;
+    if (repeat >= 3) escapeChance -= 0.10;
+    else if (repeat === 2) escapeChance -= 0.05;
     if (action === 'OBSERVE') {
         narrative(`You keep your eyes on the ${entityName}.\n\nYou study its movements, its patterns.\n\nThis knowledge may help you survive the next encounter.`, "");
         state.observedEntity = entityName;
