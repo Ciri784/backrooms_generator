@@ -202,55 +202,58 @@
     </style>
 </head>
 <body>
+    <button id="lang-toggle-idx" onclick="setLang(getLang() === 'en' ? 'zhTW' : 'en')">中文 / EN</button>
     <div class="container">
-        <h1>THE BACKROOMS</h1>
-        <p class="subtitle">YOU SHOULDN'T HAVE COME HERE</p>
+        <h1 id="idx-title">THE BACKROOMS</h1>
+        <p class="subtitle" id="idx-subtitle">YOU SHOULDN'T HAVE COME HERE</p>
 
-        <div class="warning-banner">
+        <div class="warning-banner" id="idx-banner">
             ⚠ IF YOU'RE NOT CAREFUL AND YOU NOOCIPE SOME OF THE PRECESS OF THIS LEVEL AND YOU GET CAUGHT IN THE WRONG PLACE, THE ENTITY WILL FOLLOW YOU AND KILL YOU. ⚠
         </div>
 
         <div class="panels">
             <div class="panel">
-                <h2 class="panel-title">[ ROOM ]</h2>
-                <button class="btn" onclick="generateRoom()">GENERATE ROOM</button>
+                <h2 class="panel-title" id="idx-room-panel">[ ROOM ]</h2>
+                <button class="btn" id="idx-gen-room-btn" onclick="generateRoom()">GENERATE ROOM</button>
                 <div id="room-output" class="output">
                     Click the button to generate a room description...
                 </div>
             </div>
 
             <div class="panel">
-                <h2 class="panel-title">[ ENTITY ]</h2>
-                <button class="btn" onclick="generateEntity()">GENERATE ENTITY</button>
+                <h2 class="panel-title" id="idx-entity-panel">[ ENTITY ]</h2>
+                <button class="btn" id="idx-gen-entity-btn" onclick="generateEntity()">GENERATE ENTITY</button>
                 <div id="entity-output" class="output">
                     Click the button to generate an entity description...
                 </div>
             </div>
         </div>
 
-        <p class="static-text">FLOOR 0 · THE LOBBY · NO ENTITIES DETECTED</p>
+        <p class="static-text" id="idx-floor-status">FLOOR 0 · THE LOBBY · NO ENTITIES DETECTED</p>
 
         <div class="game-link" style="text-align: center; margin: 30px 0;">
-            <a href="game.html" style="color: #c9b458; text-decoration: none; font-size: 0.9rem; letter-spacing: 3px; border: 1px solid #c9b458; padding: 15px 30px; display: inline-block; transition: all 0.3s;">
+            <a href="game.html" id="idx-survival-link" style="color: #c9b458; text-decoration: none; font-size: 0.9rem; letter-spacing: 3px; border: 1px solid #c9b458; padding: 15px 30px; display: inline-block; transition: all 0.3s;">
                 [ SURVIVAL MODE ]
             </a>
-            <p style="color: #5a5a3a; font-size: 0.7rem; margin-top: 10px; letter-spacing: 2px;">EXPLORE THE BACKROOMS · SURVIVE THE ENTITIES</p>
+            <p id="idx-survival-hint" style="color: #5a5a3a; font-size: 0.7rem; margin-top: 10px; letter-spacing: 2px;">EXPLORE THE BACKROOMS · SURVIVE THE ENTITIES</p>
         </div>
 
         <div class="github-link" style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #2a2a1a;">
-            <a href="https://github.com/ciri784/backrooms_generator" style="color: #5a5a3a; text-decoration: none; font-size: 0.75rem; letter-spacing: 2px;">
+            <a id="idx-view-github" href="https://github.com/ciri784/backrooms_generator" style="color: #5a5a3a; text-decoration: none; font-size: 0.75rem; letter-spacing: 2px;">
                 VIEW ON GITHUB
             </a>
         </div>
 
-        <div class="footer">
+        <div class="footer" id="idx-footer">
             Backrooms Generator v0.3 (Static) · For entertainment purposes only
         </div>
     </div>
 
+    <script src="i18n.js"></script>
+    <script src="i18n_strings.js"></script>
     <script>
         // ============================================================
-        // ROOM GENERATION DATA
+        // ROOM GENERATION DATA (lookup via t(); no inline strings)
         // ============================================================
 
         const ROOMS = [
@@ -433,56 +436,56 @@
         // ============================================================
 
         function generateRoomData() {
-            const room = pick(ROOMS);
-            const room_size = pick(ROOM_SIZES);
-            const level = pick(LEVEL_NAMES);
-            const wall_cover = pick(WALL_COVERINGS);
-
-            const template = room.template.replace("{room_size}", room_size).replace("{wall_cover}", wall_cover);
-
-            const ceiling = pick(CEILING_ISSUES);
-            const light = pick(LIGHT_ISSUES);
-            const smell = pick(SMELLS);
+            const roomIdx = Math.floor(Math.random() * 8);
+            const roomSizeIdx = Math.floor(Math.random() * 5);
+            const wallIdx = Math.floor(Math.random() * 5);
+            const lvlIdx = Math.floor(Math.random() * 8);
+            const ceilIdx = Math.floor(Math.random() * 4);
+            const lightIdx = Math.floor(Math.random() * 5);
+            const smellIdx = Math.floor(Math.random() * 5);
+            const hintIdx = Math.floor(Math.random() * 6);
+            const stabIdx = Math.floor(Math.random() * 10);
 
             const numSounds = Math.floor(Math.random() * 3) + 2; // 2-4 sounds
-            const sounds = shuffle(SOUNDS).slice(0, numSounds);
+            const soundPool = [];
+            for (let i = 0; i < 7; i++) soundPool.push(i);
+            shuffle(soundPool);
+            const sounds = soundPool.slice(0, numSounds);
 
-            const entityHint = pick(ENTITY_HINTS);
-            const stability = pick(STABILITY_LEVELS);
+            const template = t("room." + roomIdx + ".template", t("roomSize." + roomSizeIdx));
+            const desc = t("room." + roomIdx + ".desc").replace("{0}", t("wall." + wallIdx));
+            const ceiling = t("ceiling." + ceilIdx);
+            const light = t("light." + lightIdx);
+            const smell = t("smell." + smellIdx);
+            const soundLines = sounds.map(i => t("sound." + i));
+            const entityHint = t("hint." + hintIdx);
+            const stability = t("stab." + stabIdx);
 
-            let desc = `You are in ${template}.\n`;
-            desc += `${room.desc}\n\n`;
-            desc += `${ceiling}\n`;
-            desc += `${light}\n`;
-            desc += `${smell}\n\n`;
-
-            sounds.forEach(sound => {
-                desc += `${sound}\n`;
-            });
-
-            desc += `\nYou can't remember how you got here.\n`;
-            desc += `There is no exit. There is only forward.\n\n`;
-            desc += `[ ${entityHint} ]\n`;
-            desc += `[ Stability: ${stability} ]`;
+            let out = `${t("room.in")} ${template}\n`;
+            out += `${desc}\n\n`;
+            out += `${ceiling}\n`;
+            out += `${light}\n`;
+            out += `${smell}\n\n`;
+            soundLines.forEach(s => { out += `${s}\n`; });
+            out += t("room.trailing", entityHint, stability);
 
             return {
-                level_num: level.num,
-                level_name: level.name,
-                level_subtitle: level.subtitle,
-                description: desc
+                level_num: lvlIdx,
+                level_name: t("lvl." + lvlIdx + ".name"),
+                level_subtitle: t("lvl." + lvlIdx + ".sub"),
+                description: out
             };
         }
 
         function generateEntityData() {
-            const entity = pick(ENTITY_TYPES);
-            const behavior = pick(ENTITY_BEHAVIORS);
-            const warning = pick(ENTITY_WARNINGS);
-
+            const idx = Math.floor(Math.random() * 8);
+            const behIdx = Math.floor(Math.random() * 6);
+            const warnIdx = Math.floor(Math.random() * 5);
             return {
-                name: entity.name,
-                description: entity.desc,
-                behavior: behavior,
-                warning: warning
+                name: t("ent." + idx + ".name"),
+                description: t("ent." + idx + ".desc"),
+                behavior: t("entbeh." + behIdx),
+                warning: t("entwarn." + warnIdx)
             };
         }
 
@@ -492,12 +495,12 @@
 
         function generateRoom() {
             const output = document.getElementById('room-output');
-            output.innerHTML = '<span class="loading">Generating</span>';
+            output.innerHTML = '<span class="loading">' + t("idx.roomLoading") + '</span>';
 
             setTimeout(() => {
                 const data = generateRoomData();
                 output.innerHTML =
-                    `<span class="level-header">LEVEL ${data.level_num} — ${data.level_name}</span>` +
+                    `<span class="level-header">LEVEL ${data.level_num} \u2014 ${data.level_name}</span>` +
                     `<br>(${data.level_subtitle})<br><br>` +
                     `${data.description.replace(/\n/g, '<br>')}`;
             }, 300);
@@ -505,7 +508,7 @@
 
         function generateEntity() {
             const output = document.getElementById('entity-output');
-            output.innerHTML = '<span class="loading">Entity approaching</span>';
+            output.innerHTML = '<span class="loading">' + t("idx.entityLoading") + '</span>';
 
             setTimeout(() => {
                 const data = generateEntityData();
@@ -513,8 +516,45 @@
                     `<span class="entity-name">${data.name}</span><br><br>` +
                     `${data.description.replace(/\n/g, '<br>')}<br><br>` +
                     `[ ${data.behavior} ]<br><br>` +
-                    `⚠ ${data.warning}`;
+                    `\u26a0 ${data.warning}`;
             }, 300);
+        }
+
+        function applyIndexLanguage() {
+            const map = {
+                "idx-title": "idx.title",
+                "idx-subtitle": "idx.subtitle",
+                "idx-banner": "idx.banner",
+                "idx-room-panel": "idx.roomPanel",
+                "idx-entity-panel": "idx.entityPanel",
+                "idx-gen-room-btn": "idx.genRoom",
+                "idx-gen-entity-btn": "idx.genEntity",
+                "idx-floor-status": "idx.floorStatus",
+                "idx-survival-link": "idx.survivalLink",
+                "idx-survival-hint": "idx.survivalHint",
+                "idx-view-github": "idx.viewGithub",
+                "idx-footer": "idx.footer",
+            };
+            for (const id in map) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = t(map[id]);
+            }
+            const ro = document.getElementById("room-output");
+            if (ro && ro.dataset.empty !== "0") ro.textContent = t("idx.roomEmpty");
+            const eo = document.getElementById("entity-output");
+            if (eo && eo.dataset.empty !== "0") eo.textContent = t("idx.entityEmpty");
+            const lt = document.getElementById("lang-toggle-idx");
+            if (lt) lt.textContent = t("idx.langToggle");
+        }
+    </script>
+    <script>
+        if (typeof setLang === "function") {
+            if (typeof localStorage !== "undefined" && localStorage.getItem("backrooms_lang")) {
+                setLang(localStorage.getItem("backrooms_lang"));
+            }
+            if (typeof applyIndexLanguage === "function") applyIndexLanguage();
+            const _origSetLang = setLang;
+            window.setLang = function (l) { _origSetLang(l); applyIndexLanguage(); };
         }
     </script>
 </body>
