@@ -35,6 +35,7 @@ function useItem(slotIndex) {
 
 function checkGameOver() {
     if (state.stability <= 0) {
+        if (window.Audio) window.Audio.death();
         const msgs = [
             "death.cause0",
             "death.cause1",
@@ -68,6 +69,7 @@ function checkGameOver() {
 
 function moveOn() {
     if (state.inEncounter) return;
+    if (window.Audio) window.Audio.heartbeat();
     state.rooms++;
     if (chance(0.12) && state.level < 7) {
         state.level++;
@@ -79,6 +81,12 @@ function moveOn() {
         nt("move.forward", [getCurrentLevel().name, generateRoomDesc()]);
     }
     updateUI();
+    if (window.Audio) {
+        // 8% chance of a phantom footstep — your own footsteps, from
+        // the next room over, slightly before you. Disorienting on
+        // purpose; you can't tell if it was the building or you.
+        if (Math.random() < 0.08) window.Audio.fakeFootsteps();
+    }
 
     // Death Echo: if this room matches the room we died in last run,
     // surface a fragment of memory in the narrative.
@@ -120,11 +128,13 @@ function descendToLevel(newLevel) {
     el.textContent = lines[0];
     state.inTransition = true;
     setActionButtonsEnabled(false);
+    if (window.Audio) window.Audio.transition();
     let i = 1;
     const tick = () => {
         if (i >= lines.length) {
             state.inTransition = false;
             updateUI();
+            if (window.Audio) window.Audio.startLevel(newLevel);
             if (lv.boss && !state.bossesDefeated[newLevel] && newLevel < LEVELS.length) {
                 setTimeout(spawnBossEncounter, 600);
             } else {
@@ -141,6 +151,7 @@ function descendToLevel(newLevel) {
 
 function search() {
     if (state.inEncounter || state.inTransition) return;
+    if (window.Audio) window.Audio.heartbeat();
     state.rooms++;
     const found = addItem();
     if (found) {
@@ -158,6 +169,7 @@ function search() {
 
 function hide() {
     if (state.inTransition) return;
+    if (window.Audio) window.Audio.heartbeat();
     if (state.inEncounter) {
         entityEncounter("HIDE");
         return;
@@ -179,6 +191,7 @@ function holdStill() {
         entityEncounter("HOLD STILL");
         return;
     }
+    if (window.Audio) window.Audio.heartbeat();
     state.rooms++;
     updateUI();
     if (chance(0.5)) {
@@ -193,6 +206,7 @@ function holdStill() {
 
 function spawnEntity() {
     if (state.inEncounter || state.inTransition) return;
+    if (window.Audio) window.Audio.entityApproach();
     state.inEncounter = true;
     const lv = getCurrentLevel();
     const entityName = pick(lv.entities);
@@ -299,6 +313,7 @@ function spawnBossEncounter() {
         setActionButtonsEnabled(true);
         return;
     }
+    if (window.Audio) window.Audio.bossEncounter();
     state.inBossEncounter = true;
     state.currentBoss = bossName;
     nt("boss.warning", [bossName.toUpperCase(), boss.intro, boss.desc, boss.action], "entity");
@@ -338,6 +353,7 @@ function bossEncounter(action) {
         state.escaped++;
         state.bossesDefeated[state.level] = true;
         nt("boss.escape", [action, bossName], "");
+        if (window.Audio) window.Audio.bossDefeat();
         state.inBossEncounter = false;
         state.currentBoss = null;
         state.observedBoss = null;
@@ -352,6 +368,7 @@ function bossEncounter(action) {
         updateUI();
     } else {
         nt("boss.fail", [action, bossName, damage], "entity");
+        if (window.Audio) window.Audio.entityHit();
         state.stability = clamp(state.stability - damage, 0, 100);
         state.observedBoss = null;
         updateUI();
@@ -401,6 +418,7 @@ function entityEncounter(action) {
             ENTITY_OBSERVE_KNOWLEDGE[entityName] = 0.15;
         }
         nt("entity.escape", [action, entityName], "");
+        if (window.Audio) window.Audio.entityDefeat();
         state.hasFlashlight = false;
         state.damageReduction = 0;
         state.observedEntity = null;
@@ -413,6 +431,7 @@ function entityEncounter(action) {
         } else {
             nt("entity.fail", [action, entityName, damage], "entity");
         }
+        if (window.Audio) window.Audio.entityHit();
         state.stability = clamp(state.stability - damage, 0, 100);
         state.hasFlashlight = false;
         state.damageReduction = 0;
@@ -452,6 +471,7 @@ function spawnDoorChoice() {
 function openDoor() {
     if (!state.pendingDoor) return;
     state.pendingDoor = false;
+    if (window.Audio) window.Audio.doorOpen();
     state.stability = clamp(state.stability + 10, 0, 100);
     if (state.visitedRoomSignatures) {
         state.visitedRoomSignatures = state.visitedRoomSignatures.filter(
@@ -475,6 +495,7 @@ function openDoor() {
 function ignoreDoor() {
     if (!state.pendingDoor) return;
     state.pendingDoor = false;
+    if (window.Audio) window.Audio.doorIgnore();
     state.doorsIgnoredThisLevel = (state.doorsIgnoredThisLevel || 0) + 1;
     if (state.visitedRoomSignatures) {
         state.visitedRoomSignatures = state.visitedRoomSignatures.filter(
@@ -495,6 +516,13 @@ function ignoreDoor() {
 function startGame() {
     initState();
     Object.keys(ENTITY_OBSERVE_KNOWLEDGE).forEach(key => delete ENTITY_OBSERVE_KNOWLEDGE[key]);
+    if (window.Audio) {
+        // Restart the level-0 ambient bed for a new run. The unlock
+        // already started it on first interaction; this just resets
+        // the level so a Try Again feels like a new descent.
+        window.Audio.startLevel(0);
+        window.Audio.setStability(100);
+    }
     document.getElementById("game-over").classList.remove("show");
     document.getElementById("actions").innerHTML = `
         <button class="action-btn" onclick="moveOn()">MOVE</button>

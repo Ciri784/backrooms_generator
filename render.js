@@ -95,6 +95,7 @@ function narrative(text, cls = "", mode) {
 function pickSlowRoom() { return pick(SLOW_ROOMS); }
 
 function enterSlowRoom() {
+    if (window.Audio) window.Audio.slowRoom();
     const lines = pickSlowRoom();
     const el = document.getElementById("narrative");
     el.className = "room-still";
@@ -154,6 +155,7 @@ function updateUI() {
     const lv = getCurrentLevel();
     document.getElementById("level-name").textContent = `${t("descend.toLevel", lv.num, t("level." + lv.num + ".name"))}`;
     document.getElementById("room-desc").textContent = t("level." + lv.num + ".desc");
+    if (window.Audio) window.Audio.setStability(state.stability);
 
     // Apply static UI labels to current language.
     applyStaticLabels();
