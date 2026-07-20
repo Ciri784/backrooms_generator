@@ -176,6 +176,8 @@
         #narrative.event { border-left-color: #d45050; }
         #narrative.item { border-left-color: #50d450; }
         #narrative.entity { border-left-color: #d45050; }
+        #narrative.room-still { color: #a8a28a; text-shadow: 0 0 4px rgba(180, 170, 130, 0.15); animation: still-drift 6s ease-in-out infinite; }
+        @keyframes still-drift { 0%,100% { opacity: 0.92; } 50% { opacity: 1; } }
 
         #inventory-panel {
             background: rgba(0,0,0,0.3);
@@ -663,6 +665,117 @@
             return `You are in a ${pick(sizes)} ${pick(types)}. ${pick(details)}`;
         }
 
+        // ---- Slow Hours ----
+        // 5-8 line ambient scenes that play out line by line at 800ms cadence,
+        // same rhythm as descendToLevel. Triggered on room entry with 25%
+        // chance. While a slow room is unfolding, no entity or environmental
+        // event can fire. The point is to make the player feel the building
+        // breathe between crises.
+        const SLOW_ROOMS = [
+            [
+                "The room is quiet.",
+                "A light flickers. Once. Twice.",
+                "The hum is softer here, almost kind.",
+                "You stand still. Nothing comes.",
+                "You are, for a moment, alone with the wallpaper.",
+            ],
+            [
+                "Water drips somewhere out of sight.",
+                "Drip.",
+                "Drip.",
+                "You count them without meaning to.",
+                "Three drops. Then silence.",
+                "The silence is louder than the drips.",
+            ],
+            [
+                "A chair sits in the middle of the floor.",
+                "It faces away from you.",
+                "There is no reason for a chair to be there.",
+                "There is no reason for you to look at it this long.",
+            ],
+            [
+                "The walls are covered in handwriting.",
+                "You cannot read it. You do not want to.",
+                "Some of it looks like your own.",
+                "Some of it looks like everyone's.",
+            ],
+            [
+                "A door is slightly open.",
+                "Beyond it, another room.",
+                "Beyond that, another door.",
+                "Beyond that, you do not look.",
+            ],
+            [
+                "The lights are off.",
+                "You cannot remember turning them off.",
+                "You cannot remember the lights being on.",
+                "The dark is patient. It does not need you to move.",
+            ],
+            [
+                "Something is breathing nearby.",
+                "You freeze.",
+                "The breathing stops.",
+                "You wonder if you imagined it.",
+                "You did not imagine it.",
+            ],
+            [
+                "A radio is playing somewhere.",
+                "There is no station it could be on.",
+                "The voice on it knows your name.",
+                "It does not say it out loud. It just knows.",
+            ],
+            [
+                "The carpet is warm under your feet.",
+                "Warmer than it should be.",
+                "You lift your foot. The warmth follows.",
+            ],
+            [
+                "A photograph is on the floor.",
+                "You do not pick it up.",
+                "You do not need to.",
+                "You know whose face is in it.",
+            ],
+            [
+                "The hum drops. Rises. Drops again.",
+                "It is testing you.",
+                "It is testing the room.",
+                "It is testing something that is not you.",
+            ],
+            [
+                "Footsteps pass by outside the door.",
+                "They slow down at your room.",
+                "They keep going.",
+                "The next room, they stop.",
+            ],
+        ];
+
+        function pickSlowRoom() { return pick(SLOW_ROOMS); }
+
+        // Plays a slow-room scene line by line. Reuses the same narrative
+        // element and rhythm as descendToLevel. Suppresses entity and env
+        // event spawns by setting inTransition; clears it at the end.
+        function enterSlowRoom() {
+            const lines = pickSlowRoom();
+            const el = document.getElementById("narrative");
+            el.className = "room-still";
+            el.textContent = lines[0];
+            state.inTransition = true;
+
+            let i = 1;
+            const tick = () => {
+                if (i >= lines.length) {
+                    state.inTransition = false;
+                    el.className = "";
+                    updateUI();
+                    return;
+                }
+                el.textContent = el.textContent + "\n\n" + lines[i];
+                i++;
+                setTimeout(tick, 800);
+            };
+            setTimeout(tick, 800);
+        }
+
         function updateUI() {
             const stab = document.getElementById("stability");
             stab.textContent = state.stability + "%";
@@ -883,6 +996,9 @@
             if (chance(0.12) && state.level < 7) {
                 state.level++;
                 descendToLevel(state.level);
+            } else if (chance(0.25) && !state.inTransition) {
+                enterSlowRoom();
+                return;
             } else {
                 narrative(`You move forward through the ${getCurrentLevel().name}.\n\n${generateRoomDesc()}`);
             }
