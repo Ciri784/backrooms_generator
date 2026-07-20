@@ -98,6 +98,14 @@ function moveOn() {
     if (chance(0.10 + state.level * 0.02)) {
         setTimeout(spawnEnvironmentEvent, 500);
     }
+    // Doors: 20% chance a door appears. OPEN it: +10 stability,
+    // room signature gets scrambled (you end up somewhere new),
+    // but you trigger an entity encounter on the other side.
+    // IGNORE it: the door stays in your memory and the next entity
+    // you meet in this level will reference the door you walked past.
+    if (chance(0.20) && !state.inEncounter && !state.inTransition) {
+        spawnDoorChoice();
+    }
 }
 
 function descendToLevel(newLevel) {
@@ -202,6 +210,14 @@ function spawnEntity() {
         desc = entity.desc + "\n\nIts eyes know you better now.";
     } else if (repeatCount >= 3) {
         desc = entity.desc + "\n\nIt remembers you. It has been waiting.";
+    }
+    if (state.doorsIgnoredThisLevel && state.doorsIgnoredThisLevel > 0) {
+        const doorCallbacks = [
+            "A door is still behind you. You can feel it. It wants you to know that.",
+            "Behind you, somewhere, a door you ignored creaks on its hinges.",
+            "You walked past a door. The thing in front of you knows.",
+        ];
+        desc += "\n\n" + pick(doorCallbacks);
     }
     narrative(`WARNING: ${entityName.toUpperCase()}\n\n${desc}\n\nRecommended: ${entity.action}`, "entity");
     document.getElementById("actions").innerHTML = `
@@ -437,6 +453,76 @@ function entityEncounter(action) {
     checkGameOver();
 }
 
+// ---- Doors ----
+// 20% chance per moveOn(). A door appears. OPEN it: +10 stability,
+// roomsPerLevel counter for this level gets scrambled so Echo Room
+// can't fire here for the rest of the run (you've been somewhere
+// new), and an entity encounter triggers on the other side. IGNORE
+// it: the door persists in your memory, and the next entity you
+// meet in this level gets a "the door is still behind you" line.
+function spawnDoorChoice() {
+    if (state.inEncounter || state.inTransition || state.inBossEncounter) return;
+    state.inEncounter = true;
+    state.pendingDoor = true;
+    const doorDesc = pick([
+        "A door stands in the middle of the room. It wasn't here before.",
+        "The wall is open. A passage leads to somewhere else.",
+        "There's a door painted on the wall. It is not painted.",
+        "An elevator. The buttons are all the same number.",
+        "A heavy door, slightly ajar. The light beyond is wrong.",
+    ]);
+    narrative(doorDesc, "event");
+    document.getElementById("actions").innerHTML = `
+        <button class="action-btn" onclick="openDoor()">OPEN</button>
+        <button class="action-btn" onclick="ignoreDoor()">IGNORE</button>
+    `;
+}
+
+function openDoor() {
+    if (!state.pendingDoor) return;
+    state.pendingDoor = false;
+    state.stability = clamp(state.stability + 10, 0, 100);
+    // Scramble the room counter so Echo Room can't fire on the
+    // current level for the rest of the run.
+    if (state.visitedRoomSignatures) {
+        state.visitedRoomSignatures = state.visitedRoomSignatures.filter(
+            s => !s.startsWith(state.level + ":")
+        );
+    }
+    narrative(`You open the door. The air on the other side is different. The architecture is different.\n\nStability +10%.`, "item");
+    state.inEncounter = false;
+    document.getElementById("actions").innerHTML = `
+        <button class="action-btn" onclick="moveOn()">MOVE</button>
+        <button class="action-btn" onclick="search()">SEARCH</button>
+        <button class="action-btn" onclick="hide()">HIDE</button>
+        <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
+    `;
+    updateUI();
+    if (chance(0.4)) {
+        setTimeout(spawnEntity, 600);
+    }
+}
+
+function ignoreDoor() {
+    if (!state.pendingDoor) return;
+    state.pendingDoor = false;
+    state.doorsIgnoredThisLevel = (state.doorsIgnoredThisLevel || 0) + 1;
+    if (state.visitedRoomSignatures) {
+        state.visitedRoomSignatures = state.visitedRoomSignatures.filter(
+            s => !s.startsWith(state.level + ":")
+        );
+    }
+    narrative(`You walk past the door. It is still there. You can feel it behind you.`, "event");
+    state.inEncounter = false;
+    document.getElementById("actions").innerHTML = `
+        <button class="action-btn" onclick="moveOn()">MOVE</button>
+        <button class="action-btn" onclick="search()">SEARCH</button>
+        <button class="action-btn" onclick="hide()">HIDE</button>
+        <button class="action-btn" onclick="holdStill()">HOLD STILL</button>
+    `;
+    updateUI();
+}
+
 function startGame() {
     initState();
     Object.keys(ENTITY_OBSERVE_KNOWLEDGE).forEach(key => delete ENTITY_OBSERVE_KNOWLEDGE[key]);
@@ -486,4 +572,7 @@ if (typeof window !== "undefined") {
     window.spawnBossEncounter = spawnBossEncounter;
     window.bossEncounter = bossEncounter;
     window.startGame = startGame;
+    window.spawnDoorChoice = spawnDoorChoice;
+    window.openDoor = openDoor;
+    window.ignoreDoor = ignoreDoor;
 }
