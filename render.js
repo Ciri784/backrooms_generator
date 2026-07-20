@@ -16,6 +16,10 @@ function narrative(text, cls = "") {
     // double-count the arrival room.
     if (!state.inTransition && state.level != null) {
         state.roomsPerLevel[state.level] = (state.roomsPerLevel[state.level] || 0) + 1;
+        if (!state.visitedRoomSignatures) state.visitedRoomSignatures = [];
+        const sig = state.level + ":" + state.roomsPerLevel[state.level];
+        state.visitedRoomSignatures.push(sig);
+        if (state.visitedRoomSignatures.length > 50) state.visitedRoomSignatures.shift();
     }
     // Keep the last 280 chars of the most recent narrative so we
     // can show it as "last words" on the death screen.
