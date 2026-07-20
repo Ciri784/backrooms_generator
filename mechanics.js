@@ -79,6 +79,19 @@ function moveOn() {
         narrative(`You move forward through the ${getCurrentLevel().name}.\n\n${generateRoomDesc()}`);
     }
     updateUI();
+
+    // Death Echo: if this room matches the room we died in last run,
+    // surface a fragment of memory in the narrative.
+    const echo = checkDeathEcho();
+    if (echo) {
+        const echoLines = [
+            `\n\nYou notice a dark stain on the tiles.`,
+            `\n\nThe air here feels familiar. Too familiar.`,
+            `\n\nSomething happened here before. You can't remember what.`,
+        ];
+        const el = document.getElementById("narrative");
+        el.textContent = el.textContent + pick(echoLines);
+    }
     if (chance(0.15 + state.level * 0.05)) {
         setTimeout(spawnEntity, 400);
     }

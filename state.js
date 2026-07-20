@@ -12,6 +12,7 @@ let state = {};
 const ENTITY_OBSERVE_KNOWLEDGE = {};
 
 function initState() {
+    const last = getLastRecord();
     state = {
         stability: 100, level: 0, rooms: 0, escaped: 0,
         inventory: [], hasFlashlight: false, damageReduction: 0,
@@ -21,6 +22,12 @@ function initState() {
         bossesDefeated: Array(LEVELS.length).fill(false),
         roomsPerLevel: Array(LEVELS.length).fill(0),
         lastNarrative: "",
+        deathEchoes: last && last.roomsPerLevel
+            ? last.roomsPerLevel
+                .map((r, i) => r > 0 ? { level: i, roomInLevel: r } : null)
+                .filter(x => x !== null)
+            : [],
+        deathEchoesSeen: [],
     };
 }
 
@@ -82,6 +89,23 @@ function getAggregate() {
     };
 }
 
+// ---- Death Echo: "you remember this room" ----
+// Returns true if a death echo fired on this room — caller appends a
+// fragment to the narrative. Each echo fires at most once per run.
+function checkDeathEcho() {
+    if (!state.deathEchoes || state.deathEchoes.length === 0) return null;
+    const seen = state.deathEchoesSeen;
+    const idx = state.deathEchoes.findIndex(e =>
+        e.level === state.level &&
+        state.roomsPerLevel[state.level] === e.roomInLevel &&
+        !seen.includes(e.level + ':' + e.roomInLevel)
+    );
+    if (idx === -1) return null;
+    const e = state.deathEchoes[idx];
+    seen.push(e.level + ':' + e.roomInLevel);
+    return e;
+}
+
 if (typeof window !== "undefined") {
     window.state = state;
     window.ENTITY_OBSERVE_KNOWLEDGE = ENTITY_OBSERVE_KNOWLEDGE;
@@ -97,4 +121,5 @@ if (typeof window !== "undefined") {
     window.saveDeathRecord = saveDeathRecord;
     window.getLastRecord = getLastRecord;
     window.getAggregate = getAggregate;
+    window.checkDeathEcho = checkDeathEcho;
 }
