@@ -57,6 +57,10 @@ function enterSlowRoom() {
 }
 
 // ---- Room description (random) ----
+// Echo Room: 30% chance a re-visited room renders with a subtle
+// difference (a piece of furniture moved, a new mark on the wall).
+// The point isn't to scare — it's to make the player wonder if the
+// architecture is wrong, or if they are.
 function generateRoomDesc() {
     const sizes = ["small", "cramped", "vast", "narrow", "seemingly infinite"];
     const types = ["room", "hallway", "corridor", "space", "chamber"];
@@ -66,6 +70,21 @@ function generateRoomDesc() {
         "You hear something moving.", "The walls feel wrong. Too close.",
         "Muffled sounds echo from somewhere.", "The floor is wet.",
     ];
+    const echoDetails = [
+        "Wait — wasn't the wallpaper peeling on the other side?",
+        "There's a chair here. There wasn't a chair here before.",
+        "A line of tape on the floor, in a different place than before.",
+        "The light fixture is angled slightly differently. You're sure of it.",
+        "There's a scuff mark on the wall you don't remember making.",
+        "The pattern of stains on the carpet is rearranged.",
+    ];
+    const sig = state.level + ":" + state.roomsPerLevel[state.level];
+    const seenCount = state.visitedRoomSignatures
+        ? state.visitedRoomSignatures.filter(s => s === sig).length
+        : 0;
+    if (seenCount >= 2 && Math.random() < 0.30) {
+        return `You are in a ${pick(sizes)} ${pick(types)}. ${pick(echoDetails)}`;
+    }
     return `You are in a ${pick(sizes)} ${pick(types)}. ${pick(details)}`;
 }
 
