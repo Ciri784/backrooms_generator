@@ -21,6 +21,25 @@ function narrative(text, cls = "") {
         state.visitedRoomSignatures.push(sig);
         if (state.visitedRoomSignatures.length > 50) state.visitedRoomSignatures.shift();
     }
+    // NARRATOR FAULT: at high stability the narrative occasionally
+    // contradicts itself. Only outside transitions / encounters so
+    // the contradiction doesn't bleed into scripted beats.
+    if (text && !state.inTransition && !state.inEncounter &&
+        !state.inBossEncounter && state.stability > 70 && Math.random() < 0.05) {
+        const faults = [
+            "\n\nYou turn left. There is no left.",
+            "\n\nThe corridor stretches on. It was straight a moment ago.",
+            "\n\nYou count four exits. You only remember three.",
+            "\n\nYour footsteps echo twice. You are alone.",
+            "\n\nThe wallpaper pattern repeats one row too many.",
+            "\n\nYou hear your own breathing from the next room.",
+            "\n\nThe light flickers. For a moment, you see the room from above.",
+            "\n\nYou smell rain. There are no windows here.",
+            "\n\nYour shadow points a different direction than you do.",
+            "\n\nThe hum in the walls spells something. You wish it didn't.",
+        ];
+        el.textContent = el.textContent + pick(faults);
+    }
     // Keep the last 280 chars of the most recent narrative so we
     // can show it as "last words" on the death screen.
     if (text) state.lastNarrative = String(text).slice(-280);
