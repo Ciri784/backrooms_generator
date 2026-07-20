@@ -129,7 +129,7 @@ function descendToLevel(newLevel) {
         if (i >= lines.length) {
             state.inTransition = false;
             updateUI();
-            if (lv.boss && !state.bossesDefeated[newLevel] && newLevel < LEVELS.length - 1) {
+            if (lv.boss && !state.bossesDefeated[newLevel] && newLevel < LEVELS.length) {
                 setTimeout(spawnBossEncounter, 600);
             } else {
                 setActionButtonsEnabled(true);

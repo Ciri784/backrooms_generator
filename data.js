@@ -13,6 +13,7 @@ const LEVELS = [
     { num: 5, name: "HOTELS & ROOMS", desc: "A hotel that goes on forever.", entities: ["Partygoers", "The Thing That Tastes Color"], boss: "Room 5 Occupant" },
     { num: 6, name: "THE WATER ZONE", desc: "Pools of liquid in dark rooms.", entities: ["The Thing That Tastes Color", "Cursor"], boss: "The Drowned Conductor" },
     { num: 7, name: "THE GOLF COURSE", desc: "An endless course. The flag is always the same distance away.", entities: ["Cursor", "Skinless"], boss: "The Final Flag" },
+    { num: 8, name: "THE LOBBY YOU REMEMBER", desc: "This room. You've been here before. The window is locked from the outside. Through the glass you can see the room you woke up in, in a building you used to live in. The light in that other room is on. Someone is still there.", entities: ["Wretches"], boss: "Yourself" },
 ];
 
 // Boss entities — one per level, always triggered on level transition.
@@ -74,6 +75,13 @@ const BOSS_TEMPLATES = {
         escapeChance: 0.20,
         damage: 60,
         intro: "The grass under your feet starts breathing.",
+    },
+    "Yourself": {
+        desc: "It is you. Same scar. Same shoes. Same expression you see when you close your eyes. It does not move. It is waiting for you to move first.",
+        action: "SPEAK",
+        escapeChance: 0.50,
+        damage: 30,
+        intro: "Someone is standing in the corner of the room.",
     },
 };
 
