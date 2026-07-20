@@ -341,7 +341,7 @@
             margin-bottom: 30px;
         }
 
-        #restart-btn {
+        #restart-btn, #forget-btn {
             background: transparent;
             border: 1px solid #d45050;
             color: #d45050;
@@ -352,7 +352,20 @@
             letter-spacing: 3px;
         }
 
-        #restart-btn:hover { background: rgba(212, 80, 80, 0.1); }
+        #restart-btn { margin-right: 12px; }
+
+        #restart-btn:hover, #forget-btn:hover { background: rgba(212, 80, 80, 0.1); }
+
+        #forget-btn {
+            border-color: #888;
+            color: #888;
+        }
+
+        #forget-btn:hover {
+            border-color: #d45050;
+            color: #d45050;
+            background: rgba(212, 80, 80, 0.1);
+        }
 
         @media (max-width: 600px) {
             #main-area { grid-template-columns: 1fr; }
