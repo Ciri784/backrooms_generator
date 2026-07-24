@@ -6,7 +6,7 @@ A generator that creates liminal space descriptions. Inspired by the Backrooms, 
 
 ## Live Demo
 
-**https://Ciri784.github.io/backrooms_generator/**
+**https://Ciri784.github.io/backrooms-generator/**
 
 ## Features
 
